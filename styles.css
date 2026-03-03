@@ -405,6 +405,10 @@ button {
   z-index: 12;
 }
 
+.wish-card:has(.card-menu[open]) {
+  z-index: 18;
+}
+
 .wish-card.is-draggable {
   cursor: grab;
 }
