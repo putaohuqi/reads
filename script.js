@@ -494,7 +494,17 @@ function confirmDeleteItem() {
     return;
   }
 
-  state.items = state.items.filter((item) => item.id !== state.pendingDeleteId);
+  const now = Date.now();
+  state.items = state.items.map((item) => {
+    if (item.id !== state.pendingDeleteId) {
+      return item;
+    }
+    return {
+      ...item,
+      _deleted: true,
+      _updatedAt: now
+    };
+  });
   persistItems(state.items);
   render();
   closeDeleteConfirm();
@@ -634,8 +644,9 @@ function buildMetaLine(item) {
 }
 
 function renderStats(items) {
-  const total = items.length;
-  const open = items.filter(
+  const activeItems = items.filter((item) => !normalizeDeleted(item._deleted));
+  const total = activeItems.length;
+  const open = activeItems.filter(
     (item) => normalizePurchaseStatus(item.purchaseStatus, item.owned, item.trackingNumber) === "not-bought"
   ).length;
 
@@ -644,6 +655,7 @@ function renderStats(items) {
 
 function getVisibleItems(items, filter, query) {
   return getOrderedItems(items)
+    .filter((item) => !normalizeDeleted(item._deleted))
     .filter((item) => {
       const purchaseStatus = normalizePurchaseStatus(item.purchaseStatus, item.owned, item.trackingNumber);
       if (filter === "open") {
@@ -698,7 +710,8 @@ function loadItems() {
           size: String(item.size || ""),
           color: String(item.color || ""),
           note: String(item.note || ""),
-          owned: purchaseStatus !== "not-bought"
+          owned: purchaseStatus !== "not-bought",
+          _deleted: normalizeDeleted(item._deleted ?? item.deleted)
         };
       });
   } catch {
@@ -747,6 +760,10 @@ function normalizePurchaseStatus(value, ownedFallback = false, trackingFallback 
 
 function normalizeTrackingNumber(value) {
   return getCleanValue(value).replace(/\s+/g, "");
+}
+
+function normalizeDeleted(value) {
+  return value === true;
 }
 
 function buildCanadaPostTrackingUrl(trackingNumber) {

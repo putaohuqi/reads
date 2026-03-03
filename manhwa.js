@@ -758,7 +758,17 @@ function confirmDeleteItem() {
     return;
   }
 
-  state.items = state.items.filter((item) => item.id !== state.pendingDeleteId);
+  const now = Date.now();
+  state.items = state.items.map((item) => {
+    if (item.id !== state.pendingDeleteId) {
+      return item;
+    }
+    return {
+      ...item,
+      _deleted: true,
+      _updatedAt: now
+    };
+  });
   persistItems(state.items);
   render();
   closeDeleteConfirm();
@@ -976,14 +986,16 @@ function buildMetaLine(item) {
 }
 
 function renderStats(items) {
-  const total = items.length;
-  const reading = items.filter((item) => normalizeStatus(item.status) === "reading").length;
-  const want = items.filter((item) => normalizeStatus(item.status) === "want-to-read").length;
+  const activeItems = items.filter((item) => !normalizeDeleted(item._deleted));
+  const total = activeItems.length;
+  const reading = activeItems.filter((item) => normalizeStatus(item.status) === "reading").length;
+  const want = activeItems.filter((item) => normalizeStatus(item.status) === "want-to-read").length;
   refs.stats.textContent = `${total} series • ${reading} reading • ${want} want to read`;
 }
 
 function getVisibleItems(items, filter, typeFilter, genreFilter, query) {
   return getOrderedItems(items)
+    .filter((item) => !normalizeDeleted(item._deleted))
     .filter((item) => {
       if (filter === "all") {
         return true;
@@ -1039,7 +1051,8 @@ function loadItems() {
         chapter: String(item.chapter || ""),
         status: normalizeStatus(item.status),
         favorite: normalizeFavorite(item.favorite ?? item.favourite ?? item.pinned),
-        note: String(item.note || "")
+        note: String(item.note || ""),
+        _deleted: normalizeDeleted(item._deleted ?? item.deleted)
       }));
   } catch {
     return [];
@@ -1145,6 +1158,10 @@ function normalizeGenre(value) {
     return mapped;
   }
   return "";
+}
+
+function normalizeDeleted(value) {
+  return value === true;
 }
 
 function getLatestUpdate(items) {
