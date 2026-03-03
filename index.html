@@ -7,6 +7,36 @@
     <meta name="theme-color" content="#9abddc" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <script>
+      (() => {
+        const isStandalone =
+          (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+          window.navigator.standalone === true;
+        if (!isStandalone) {
+          return;
+        }
+
+        const path = window.location.pathname.toLowerCase();
+        const isHomeEntry =
+          path.endsWith("/wishlist/") || path.endsWith("/wishlist/index.html") || path.endsWith("/index.html");
+        if (!isHomeEntry) {
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("view") === "wishlist") {
+          return;
+        }
+
+        if (window.history.length > 1) {
+          return;
+        }
+
+        const nextUrl = new URL("manhwa.html", window.location.href);
+        nextUrl.searchParams.set("start", "reads");
+        window.location.replace(nextUrl.toString());
+      })();
+    </script>
     <title>Wishlist</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,7 +64,7 @@
         <div class="top-main">
           <div>
             <nav class="page-nav" aria-label="Site pages">
-              <a class="chip page-link is-active" href="index.html">wishlist</a>
+              <a class="chip page-link is-active" href="index.html?view=wishlist">wishlist</a>
               <a class="chip page-link" href="manhwa.html">reads</a>
             </nav>
             <p class="subtitle">things i love ♡</p>

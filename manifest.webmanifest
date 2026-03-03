@@ -1,7 +1,7 @@
 {
   "name": "Wishlist",
   "short_name": "Wishlist",
-  "start_url": "/wishlist/",
+  "start_url": "/wishlist/manhwa.html",
   "scope": "/wishlist/",
   "display": "standalone",
   "background_color": "#fafafb",
