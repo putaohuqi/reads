@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#9abddc" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Faves</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
+    <link rel="shortcut icon" href="favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css?v=20260303-2" />
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" defer></script>
+    <script src="firebase-config.js?v=20260303-2" defer></script>
+    <script src="auth-sync.js?v=20260303-2" defer></script>
+    <script src="favourite-chapters.js?v=20260304-1" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="top-main">
+          <div>
+            <nav class="page-nav" aria-label="Site pages">
+              <a class="chip page-link" href="index.html?view=wishlist">wishlist</a>
+              <a class="chip page-link" href="manhwa.html">reads</a>
+              <a class="chip page-link is-active" href="faves.html">faves</a>
+            </nav>
+            <p class="subtitle">my most loved moments ♡</p>
+            <h1>faves ✦</h1>
+            <p id="header-stats" class="header-stats">0 chapters saved</p>
+            <p class="reorder-hint">title, chapter, cover, and link only</p>
+          </div>
+          <div class="top-actions">
+            <div class="auth-inline">
+              <p id="auth-status" class="auth-status">local only</p>
+              <button id="open-auth" class="chip auth-btn" type="button">sign in</button>
+              <button id="auth-sync-now" class="chip auth-btn" type="button" hidden>sync</button>
+              <button id="auth-signout" class="chip auth-btn" type="button" hidden>sign out</button>
+              <button id="refresh-app" class="chip auth-btn" type="button" title="Refresh app">refresh</button>
+            </div>
+            <button id="open-add" class="add-btn" type="button">+ Add</button>
+          </div>
+        </div>
+
+        <div class="tool-row">
+          <label class="search-wrap" for="search">
+            <span class="sr-only">Search faves</span>
+            <input id="search" type="search" placeholder="Search title or chapter" />
+          </label>
+        </div>
+      </header>
+
+      <section class="cards-section read-sections">
+        <section class="read-section">
+          <div class="read-section-head">
+            <h2>saved chapters</h2>
+            <p id="chapter-count" class="section-count">0 chapters</p>
+          </div>
+          <ul id="chapter-list" class="wishlist manhwa-list" aria-live="polite"></ul>
+          <p id="chapter-empty" class="empty-state" hidden>
+            No faves yet.
+          </p>
+        </section>
+
+        <p id="empty-state" class="empty-state" hidden>
+          No chapters match your search yet.
+        </p>
+
+        <template id="chapter-template">
+          <li class="wish-card series-card">
+            <div class="card-top">
+              <details class="card-menu">
+                <summary class="menu-trigger" aria-label="More options">⋯</summary>
+                <div class="menu-panel">
+                  <button type="button" data-action="edit-item">Edit</button>
+                  <button type="button" data-action="delete">Delete</button>
+                </div>
+              </details>
+            </div>
+
+            <a class="wish-photo-link" target="_blank" rel="noopener noreferrer" draggable="false">
+              <img class="wish-photo" loading="lazy" alt="" draggable="false" />
+            </a>
+
+            <h3 class="wish-title">
+              <a class="wish-title-link" target="_blank" rel="noopener noreferrer" draggable="false"></a>
+            </h3>
+            <p class="wish-meta-line">
+              <span class="wish-meta-text"></span>
+            </p>
+          </li>
+        </template>
+      </section>
+    </main>
+
+    <div id="auth-backdrop" class="modal-backdrop" hidden>
+      <section class="modal-card auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <div class="modal-head">
+          <h2 id="auth-title">sign in to sync</h2>
+          <button id="close-auth" class="close-btn" type="button">Close</button>
+        </div>
+
+        <form id="auth-form" class="wish-form">
+          <label for="auth-email">Email *</label>
+          <input id="auth-email" name="email" type="email" autocomplete="email" required />
+
+          <label for="auth-password">Password *</label>
+          <input
+            id="auth-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            minlength="6"
+            required
+          />
+
+          <div class="auth-actions">
+            <button id="auth-submit" type="submit" class="add-btn">sign in</button>
+            <button id="auth-switch-mode" type="button" class="close-btn">create account</button>
+          </div>
+        </form>
+
+        <p id="auth-feedback" class="auth-feedback">local-only mode right now</p>
+      </section>
+    </div>
+
+    <div id="modal-backdrop" class="modal-backdrop" hidden>
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-head">
+          <h2 id="modal-title">Add a chapter</h2>
+          <button id="close-add" class="close-btn" type="button">Close</button>
+        </div>
+
+        <form id="chapter-form" class="wish-form">
+          <label for="title">Title *</label>
+          <input id="title" name="title" type="text" placeholder="Series title" required />
+
+          <label for="chapter">Chapter *</label>
+          <input id="chapter" name="chapter" type="text" placeholder="e.g. 126" required />
+
+          <label for="url">Chapter link *</label>
+          <input id="url" name="url" type="url" placeholder="https://..." required />
+
+          <label for="cover">Cover image link</label>
+          <input id="cover" name="cover" type="url" placeholder="https://...jpg" />
+          <input id="cover-data" name="coverData" type="hidden" />
+          <input id="cover-file" type="file" accept="image/*" hidden />
+          <div class="cover-upload-row">
+            <button id="cover-upload-btn" type="button" class="chip upload-chip">upload from device</button>
+            <button id="cover-upload-clear" type="button" class="chip upload-chip" hidden>clear upload</button>
+            <p id="cover-upload-status" class="upload-status">or paste a cover image link above</p>
+          </div>
+
+          <button id="save-chapter-btn" type="submit" class="add-btn">Save chapter</button>
+        </form>
+      </section>
+    </div>
+
+    <div id="confirm-backdrop" class="confirm-backdrop" hidden>
+      <section class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <h2 id="confirm-title">Delete chapter?</h2>
+        <p id="confirm-message">This will remove the chapter from your list.</p>
+        <div class="confirm-actions">
+          <button id="confirm-cancel" type="button" class="close-btn">Cancel</button>
+          <button id="confirm-delete" type="button" class="confirm-btn">Delete</button>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

@@ -1,14 +1,16 @@
 # Wishlist + Manhwa Tracker (GitHub Pages)
 
-Static site with two pages:
+Static site with three pages:
 - `index.html`: wishlist
 - `manhwa.html`: reading tracker
+- `faves.html`: faves tracker
 
 Both pages save locally and can optionally sync with account login.
 
 ## Features
 - Wishlist add/edit/delete + drag reorder
 - Manhwa tracker with type/genre/status filters + cover upload
+- Faves tracker for title + chapter + link + cover
 - Local browser save (`localStorage`)
 - Optional email/password login + cloud sync (Firebase Auth + Firestore)
 
