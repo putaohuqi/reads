@@ -7,6 +7,16 @@ const PURCHASE_STATUS_LABELS = {
   "on-the-way": "On the way",
   bought: "Bought"
 };
+const PURCHASE_STATUS_SORT_RANK = {
+  "not-bought": 0,
+  "on-the-way": 1,
+  bought: 2
+};
+const PRIORITY_SORT_RANK = {
+  high: 0,
+  medium: 1,
+  low: 2
+};
 
 const accentCache = new Map();
 
@@ -14,6 +24,7 @@ const state = {
   items: loadItems(),
   filter: "all",
   query: "",
+  prioritySortEnabled: false,
   view: "list",
   editingId: null,
   pendingDeleteId: null,
@@ -29,6 +40,7 @@ const refs = {
   empty: document.getElementById("empty-state"),
   search: document.getElementById("search"),
   filters: Array.from(document.querySelectorAll("[data-filter]")),
+  prioritySortToggle: document.getElementById("priority-sort-toggle"),
   stats: document.getElementById("header-stats"),
   openAdd: document.getElementById("open-add"),
   refreshApp: document.getElementById("refresh-app"),
@@ -53,6 +65,7 @@ function initialize() {
   refs.list.addEventListener("dragend", handleCardDragEnd);
   refs.search.addEventListener("input", handleSearch);
   refs.filters.forEach((button) => button.addEventListener("click", handleFilterChange));
+  refs.prioritySortToggle?.addEventListener("click", handlePrioritySortToggle);
   refs.openAdd.addEventListener("click", openAddModal);
   refs.refreshApp?.addEventListener("click", handleManualRefresh);
   refs.closeAdd.addEventListener("click", closeModal);
@@ -74,6 +87,7 @@ function initialize() {
   initializeCloudSync();
 
   setActiveFilterButton();
+  syncPrioritySortToggle();
   syncTrackingFieldState();
   applyViewClass();
   render();
@@ -373,6 +387,12 @@ function handleFilterChange(event) {
   render();
 }
 
+function handlePrioritySortToggle() {
+  state.prioritySortEnabled = !state.prioritySortEnabled;
+  syncPrioritySortToggle();
+  render();
+}
+
 function handleStorageSync(event) {
   if (event.key !== STORAGE_KEY) {
     return;
@@ -546,14 +566,25 @@ function setActiveFilterButton() {
   });
 }
 
+function syncPrioritySortToggle() {
+  const toggle = refs.prioritySortToggle;
+  if (!toggle) {
+    return;
+  }
+
+  toggle.classList.toggle("is-active", state.prioritySortEnabled);
+  toggle.setAttribute("aria-pressed", String(state.prioritySortEnabled));
+  toggle.textContent = state.prioritySortEnabled ? "priority: on" : "priority: off";
+}
+
 function applyViewClass() {
   refs.list.classList.remove("view-grid");
   refs.list.classList.add("view-list");
 }
 
 function render() {
-  const filtered = getVisibleItems(state.items, state.filter, state.query);
-  const canDrag = filtered.length > 1;
+  const filtered = getVisibleItems(state.items, state.filter, state.query, state.prioritySortEnabled);
+  const canDrag = filtered.length > 1 && !state.prioritySortEnabled;
   applyViewClass();
 
   refs.list.innerHTML = "";
@@ -653,7 +684,7 @@ function renderStats(items) {
   refs.stats.textContent = `${total} items • ${open} not bought`;
 }
 
-function getVisibleItems(items, filter, query) {
+function getVisibleItems(items, filter, query, sortByPriority = false) {
   return getOrderedItems(items)
     .filter((item) => !normalizeDeleted(item._deleted))
     .filter((item) => {
@@ -674,6 +705,23 @@ function getVisibleItems(items, filter, query) {
       const haystack =
         `${item.title} ${item.category} ${item.price} ${item.priority} ${item.size} ${item.color} ${item.note} ${item.trackingNumber} ${item.purchaseStatus}`.toLowerCase();
       return haystack.includes(query);
+    })
+    .sort((a, b) => {
+      const aStatusRank = getPurchaseStatusSortRank(a);
+      const bStatusRank = getPurchaseStatusSortRank(b);
+      if (aStatusRank !== bStatusRank) {
+        return aStatusRank - bStatusRank;
+      }
+
+      if (sortByPriority) {
+        const aPriorityRank = getPrioritySortRank(a.priority);
+        const bPriorityRank = getPrioritySortRank(b.priority);
+        if (aPriorityRank !== bPriorityRank) {
+          return aPriorityRank - bPriorityRank;
+        }
+      }
+
+      return normalizeOrder(a.order, 0) - normalizeOrder(b.order, 0);
     });
 }
 
@@ -758,6 +806,16 @@ function normalizePurchaseStatus(value, ownedFallback = false, trackingFallback 
   return "not-bought";
 }
 
+function getPurchaseStatusSortRank(item) {
+  const status = normalizePurchaseStatus(item.purchaseStatus, item.owned, item.trackingNumber);
+  return PURCHASE_STATUS_SORT_RANK[status] ?? 99;
+}
+
+function getPrioritySortRank(priorityValue) {
+  const priority = normalizePriority(priorityValue);
+  return PRIORITY_SORT_RANK[priority] ?? 99;
+}
+
 function normalizeTrackingNumber(value) {
   return getCleanValue(value).replace(/\s+/g, "");
 }
@@ -832,7 +890,9 @@ function getLatestUpdate(items) {
 }
 
 function reorderVisibleItems(sourceId, targetId, insertAfter) {
-  const visibleIds = getVisibleItems(state.items, state.filter, state.query).map((item) => item.id);
+  const visibleIds = getVisibleItems(state.items, state.filter, state.query, state.prioritySortEnabled).map(
+    (item) => item.id
+  );
   if (!visibleIds.includes(sourceId)) {
     return;
   }

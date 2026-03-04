@@ -362,6 +362,11 @@ function handleListClick(event) {
 
   if (action === "cycle-status") {
     openStatusPrompt(id);
+    return;
+  }
+
+  if (action === "set-complete") {
+    openStatusPrompt(id, "completed");
   }
 }
 
@@ -711,15 +716,23 @@ function closeDeleteConfirm() {
   syncBodyModalState();
 }
 
-function openStatusPrompt(id) {
+function openStatusPrompt(id, requestedTarget = "") {
   const item = state.items.find((entry) => entry.id === id);
   if (!item) {
     return;
   }
 
   const currentStatus = normalizeStatus(item.status);
-  const targetStatus = currentStatus === "reading" ? "reading" : getQuickStatusTarget(currentStatus);
+  const targetStatus = requestedTarget
+    ? normalizeStatus(requestedTarget)
+    : currentStatus === "reading"
+      ? "reading"
+      : getQuickStatusTarget(currentStatus);
   if (!targetStatus) {
+    return;
+  }
+
+  if (currentStatus === "completed" && targetStatus === "completed") {
     return;
   }
 
@@ -732,12 +745,21 @@ function openStatusPrompt(id) {
   refs.confirmBackdrop.hidden = true;
   refs.statusBackdrop.hidden = false;
 
-  const isReadingChapterUpdate = currentStatus === "reading";
-  refs.statusTitle.textContent = isReadingChapterUpdate ? "Update chapter" : getStatusActionLabel(currentStatus);
+  const isReadingChapterUpdate = currentStatus === "reading" && targetStatus === "reading";
+  const isCompleting = targetStatus === "completed";
+  const actionLabel = isReadingChapterUpdate
+    ? "Update chapter"
+    : isCompleting
+      ? "Set to complete"
+      : getStatusActionLabel(currentStatus);
+
+  refs.statusTitle.textContent = actionLabel;
   refs.statusMessage.textContent = isReadingChapterUpdate
     ? "Add your latest chapter read."
-    : "Add your latest chapter before updating status.";
-  refs.statusSave.textContent = isReadingChapterUpdate ? "Update chapter" : getStatusActionLabel(currentStatus);
+    : isCompleting
+      ? "Add your latest chapter before marking complete."
+      : "Add your latest chapter before updating status.";
+  refs.statusSave.textContent = actionLabel;
   refs.statusChapter.value = item.chapter || "";
   syncBodyModalState();
   refs.statusChapter.focus();
@@ -961,6 +983,11 @@ function createSeriesCard(item, canDrag) {
 
   const cycleButton = card.querySelector("[data-action='cycle-status']");
   cycleButton.textContent = getCardMenuActionLabel(item.status);
+
+  const completeButton = card.querySelector("[data-action='set-complete']");
+  const isCompleted = normalizeStatus(item.status) === "completed";
+  completeButton.hidden = isCompleted;
+  completeButton.disabled = isCompleted;
 
   const favoriteButton = card.querySelector("[data-action='toggle-favorite']");
   favoriteButton.textContent = normalizeFavorite(item.favorite) ? "Unfavorite" : "Favorite";
