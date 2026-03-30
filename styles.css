@@ -13,6 +13,7 @@
   --muted: #896d66;
   --header-bg: rgba(251, 244, 235, 0.94);
   --header-border: #f2dfe3;
+  --header-shadow: 0 16px 32px rgba(96, 69, 59, 0.08);
   --card-edge: #efe1d8;
   --chip-active-bg: #f2dfe3;
   --chip-active-border: #e7cfc7;
@@ -47,6 +48,7 @@
     --muted: #cfb7ac;
     --header-bg: rgba(32, 21, 19, 0.92);
     --header-border: #41302b;
+    --header-shadow: 0 18px 36px rgba(0, 0, 0, 0.3);
     --chip-active-bg: rgba(232, 183, 196, 0.18);
     --chip-active-border: #c49ba5;
     --menu-hover-bg: rgba(232, 183, 196, 0.16);
@@ -80,9 +82,9 @@ body {
 body {
   background-color: var(--bg);
   background-image:
-    radial-gradient(circle at top left, rgba(232, 183, 196, 0.12), transparent 34%),
-    radial-gradient(circle at top right, rgba(159, 188, 210, 0.1), transparent 30%),
-    linear-gradient(180deg, rgba(242, 223, 227, 0.32) 0%, var(--bg) 34%);
+    radial-gradient(circle at top left, rgba(232, 183, 196, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(159, 188, 210, 0.07), transparent 24%),
+    linear-gradient(180deg, rgba(242, 223, 227, 0.18) 0%, rgba(251, 244, 235, 0.1) 24%, var(--bg) 58%);
   color: var(--text);
   font-family: "Nunito", "SF Pro Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   line-height: 1.45;
@@ -95,16 +97,18 @@ body.modal-open {
 .app {
   width: min(1080px, 95vw);
   margin: 0 auto;
-  padding: 0 0 28px;
+  padding: 18px 0 32px;
 }
 
 .topbar {
   position: static;
   z-index: 20;
   background: var(--header-bg);
-  border-bottom: 1px solid var(--header-border);
+  border: 1px solid var(--header-border);
+  border-radius: 28px;
   backdrop-filter: blur(8px);
-  padding: 18px 0 16px;
+  box-shadow: var(--header-shadow);
+  padding: 20px 22px 18px;
 }
 
 .top-main {
@@ -237,6 +241,7 @@ button {
   background: var(--card);
   color: var(--text);
   padding: 0 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .filters {
@@ -342,7 +347,7 @@ button {
 }
 
 .cards-section {
-  margin-top: 18px;
+  margin-top: 24px;
 }
 
 .read-sections {
@@ -360,7 +365,7 @@ button {
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  padding: 0 2px;
+  padding: 0 4px;
 }
 
 .read-section-head h2 {
@@ -369,6 +374,7 @@ button {
   font-weight: 700;
   letter-spacing: 0.01em;
   text-transform: lowercase;
+  color: color-mix(in srgb, var(--text) 88%, var(--blue-1));
 }
 
 .section-count {
@@ -425,7 +431,7 @@ button {
 .wish-card:focus-within {
   transform: translateY(-2px);
   border-color: var(--blue-4);
-  box-shadow: var(--card-hover-shadow);
+  box-shadow: 0 16px 30px rgba(96, 69, 59, 0.12);
 }
 
 .wish-card.has-accent:hover,
@@ -1174,7 +1180,7 @@ button {
     position: static;
     top: auto;
     backdrop-filter: none;
-    padding: 14px 0 12px;
+    padding: 16px 16px 14px;
   }
 
   .top-main {
