@@ -972,12 +972,12 @@ function createCoverPlaceholder(title) {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
       <defs>
         <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#e5f3fd" />
-          <stop offset="100%" stop-color="#d1e5f4" />
+          <stop offset="0%" stop-color="#f2dfe3" />
+          <stop offset="100%" stop-color="#e7cfc7" />
         </linearGradient>
       </defs>
       <rect width="200" height="200" fill="url(#g)" />
-      <text x="100" y="118" text-anchor="middle" fill="#7b7b85" font-family="Nunito, sans-serif" font-size="84" font-weight="700">${firstLetter}</text>
+      <text x="100" y="118" text-anchor="middle" fill="#896d66" font-family="Nunito, sans-serif" font-size="84" font-weight="700">${firstLetter}</text>
     </svg>
   `;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
