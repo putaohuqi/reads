@@ -4,8 +4,8 @@
   "start_url": "/reads/manhwa.html",
   "scope": "/reads/",
   "display": "standalone",
-  "background_color": "#fbf4eb",
-  "theme_color": "#7c5b4c",
+  "background_color": "#fafafb",
+  "theme_color": "#9abddc",
   "icons": [
     {
       "src": "icon-192.png",

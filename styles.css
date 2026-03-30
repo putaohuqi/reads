@@ -1,69 +1,69 @@
 :root {
   color-scheme: light;
-  --blue-1: #7c5b4c;
-  --blue-2: #9fbcd2;
-  --blue-3: #d4b7ae;
-  --blue-4: #e7cfc7;
-  --blue-5: #f2dfe3;
-  --blue-6: #fbf4eb;
+  --blue-1: #9abddc;
+  --blue-2: #aecce4;
+  --blue-3: #bdd5e7;
+  --blue-4: #d1e5f4;
+  --blue-5: #e5f3fd;
+  --blue-6: #f5fbff;
   --bg: var(--blue-6);
-  --card: #fffaf5;
-  --border: #e7d8ce;
-  --text: #3f2a24;
-  --muted: #896d66;
-  --header-bg: rgba(251, 244, 235, 0.94);
-  --header-border: #f2dfe3;
-  --card-edge: #efe1d8;
-  --chip-active-bg: #f2dfe3;
-  --chip-active-border: #e7cfc7;
-  --menu-hover-bg: #f7ebe8;
-  --photo-bg: #fff8f2;
-  --overlay-bg: rgba(37, 24, 20, 0.32);
-  --modal-shadow: 0 20px 38px rgba(64, 41, 34, 0.14);
-  --card-hover-shadow: 0 12px 24px rgba(92, 66, 57, 0.12);
-  --drop-shadow: 0 10px 24px rgba(159, 188, 210, 0.22);
-  --focus-outline: rgba(159, 188, 210, 0.42);
-  --focus-border: rgba(159, 188, 210, 0.9);
+  --card: #ffffff;
+  --border: #e5edf5;
+  --text: #111111;
+  --muted: #7b7b85;
+  --header-bg: rgba(245, 251, 255, 0.97);
+  --header-border: var(--blue-5);
+  --card-edge: #edf3f9;
+  --chip-active-bg: var(--blue-5);
+  --chip-active-border: var(--blue-4);
+  --menu-hover-bg: #eff6fd;
+  --photo-bg: #fafafc;
+  --overlay-bg: rgba(17, 17, 17, 0.28);
+  --modal-shadow: 0 18px 34px rgba(17, 17, 17, 0.12);
+  --card-hover-shadow: 0 8px 18px rgba(17, 17, 17, 0.07);
+  --drop-shadow: 0 10px 24px rgba(154, 189, 220, 0.25);
+  --focus-outline: rgba(174, 204, 228, 0.45);
+  --focus-border: rgba(154, 189, 220, 0.9);
   --radius: 18px;
   --radius-input: 15px;
   --radius-button: 16px;
-  --accent-button: #e7cfc7;
-  --accent-button-hover: #ddc8cf;
-  --grid-edge: #f0e4dc;
-  --grid-edge-hover: #d6c6c0;
-  --shadow: 0 4px 12px rgba(64, 41, 34, 0.06);
-  --button-shadow: 0 4px 10px rgba(64, 41, 34, 0.08);
-  --button-hover-shadow: 0 8px 18px rgba(104, 79, 71, 0.14);
+  --accent-button: #d1e5f4;
+  --accent-button-hover: #d9eaf8;
+  --grid-edge: #ecf3fa;
+  --grid-edge-hover: #d7e6f5;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  --button-shadow: 0 2px 6px rgba(17, 17, 17, 0.05);
+  --button-hover-shadow: 0 6px 12px rgba(157, 184, 225, 0.25);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg: #201513;
-    --card: #2a1d1b;
-    --border: #4e3b37;
-    --card-edge: #5e4741;
-    --text: #f8eee6;
-    --muted: #cfb7ac;
-    --header-bg: rgba(32, 21, 19, 0.92);
-    --header-border: #41302b;
-    --chip-active-bg: rgba(232, 183, 196, 0.18);
-    --chip-active-border: #c49ba5;
-    --menu-hover-bg: rgba(232, 183, 196, 0.16);
-    --photo-bg: #241816;
-    --overlay-bg: rgba(9, 5, 5, 0.68);
+    --bg: #0f1319;
+    --card: #161c25;
+    --border: #2a3444;
+    --card-edge: #263245;
+    --text: #e9eef8;
+    --muted: #a4afc3;
+    --header-bg: rgba(15, 19, 25, 0.92);
+    --header-border: #202838;
+    --chip-active-bg: rgba(154, 189, 220, 0.24);
+    --chip-active-border: #6e8fb0;
+    --menu-hover-bg: rgba(154, 189, 220, 0.22);
+    --photo-bg: #121925;
+    --overlay-bg: rgba(4, 8, 13, 0.64);
     --modal-shadow: 0 22px 40px rgba(0, 0, 0, 0.55);
     --card-hover-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
-    --drop-shadow: 0 10px 24px rgba(159, 188, 210, 0.18);
-    --focus-outline: rgba(159, 188, 210, 0.34);
-    --focus-border: rgba(159, 188, 210, 0.82);
-    --accent-button: rgba(124, 91, 76, 0.78);
-    --accent-button-hover: rgba(159, 188, 210, 0.32);
+    --drop-shadow: 0 10px 24px rgba(154, 189, 220, 0.2);
+    --focus-outline: rgba(157, 189, 220, 0.34);
+    --focus-border: rgba(157, 189, 220, 0.86);
+    --accent-button: rgba(157, 189, 220, 0.3);
+    --accent-button-hover: rgba(174, 204, 228, 0.38);
     --grid-edge: rgba(255, 255, 255, 0.07);
-    --grid-edge-hover: rgba(159, 188, 210, 0.38);
-    --shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
-    --button-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
-    --button-hover-shadow: 0 10px 20px rgba(12, 8, 7, 0.42);
+    --grid-edge-hover: rgba(157, 189, 220, 0.44);
+    --shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    --button-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    --button-hover-shadow: 0 8px 16px rgba(8, 12, 20, 0.45);
   }
 }
 
@@ -78,11 +78,7 @@ body {
 }
 
 body {
-  background-color: var(--bg);
-  background-image:
-    radial-gradient(circle at top left, rgba(232, 183, 196, 0.12), transparent 34%),
-    radial-gradient(circle at top right, rgba(159, 188, 210, 0.1), transparent 30%),
-    linear-gradient(180deg, rgba(242, 223, 227, 0.32) 0%, var(--bg) 34%);
+  background: var(--bg);
   color: var(--text);
   font-family: "Nunito", "SF Pro Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   line-height: 1.45;
@@ -389,7 +385,7 @@ button {
 }
 
 .wish-card {
-  --card-accent-rgb: 159 188 210;
+  --card-accent-rgb: 157 184 225;
   position: relative;
   border: 1px solid var(--card-edge);
   border-radius: var(--radius);
