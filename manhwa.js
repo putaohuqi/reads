@@ -285,9 +285,11 @@ function handleSubmit(event) {
   if (state.editingId) {
     const editingItem = state.items.find((item) => item.id === state.editingId);
     const nextStatus = normalizeStatus(payload.status || editingItem?.status);
+    const currentStatus = normalizeStatus(editingItem?.status);
     const chapterChanged = editingItem ? payload.chapter !== (editingItem.chapter || "") : false;
-    const shouldPromoteForChapterUpdate = Boolean(editingItem) && nextStatus === "reading" && chapterChanged;
-    const nextFrontOrder = shouldPromoteForChapterUpdate ? getFrontOrder(state.items) : null;
+    const shouldPromoteInReadingList =
+      Boolean(editingItem) && shouldPromoteReadingItem(currentStatus, nextStatus, chapterChanged);
+    const nextFrontOrder = shouldPromoteInReadingList ? getFrontOrder(state.items) : null;
 
     state.items = state.items.map((item) => {
       if (item.id !== state.editingId) {
@@ -298,7 +300,7 @@ function handleSubmit(event) {
         ...payload
       };
 
-      if (shouldPromoteForChapterUpdate && nextFrontOrder !== null) {
+      if (shouldPromoteInReadingList && nextFrontOrder !== null) {
         nextItem.order = nextFrontOrder;
       }
 
@@ -636,7 +638,8 @@ function handleStatusFormSubmit(event) {
   const currentStatus = normalizeStatus(item.status);
   const targetStatus = normalizeStatus(state.pendingStatusTarget);
   const isReadingChapterUpdate = currentStatus === "reading" && targetStatus === "reading";
-  const nextFrontOrder = isReadingChapterUpdate ? getFrontOrder(state.items) : null;
+  const shouldPromoteInReadingList = shouldPromoteReadingItem(currentStatus, targetStatus, chapter !== (item.chapter || ""));
+  const nextFrontOrder = shouldPromoteInReadingList ? getFrontOrder(state.items) : null;
 
   state.items = state.items.map((entry) => {
     if (entry.id !== state.pendingStatusId) {
@@ -650,7 +653,7 @@ function handleStatusFormSubmit(event) {
       _updatedAt: now
     };
 
-    if (isReadingChapterUpdate && nextFrontOrder !== null) {
+    if (shouldPromoteInReadingList && nextFrontOrder !== null) {
       nextEntry.order = nextFrontOrder;
     }
 
@@ -1361,6 +1364,16 @@ function getCardMenuActionLabel(currentStatus) {
     return "Update chapter";
   }
   return getStatusActionLabel(currentStatus);
+}
+
+function shouldPromoteReadingItem(currentStatus, nextStatus, chapterChanged) {
+  const normalizedCurrent = normalizeStatus(currentStatus);
+  const normalizedNext = normalizeStatus(nextStatus);
+  if (normalizedNext !== "reading") {
+    return false;
+  }
+
+  return normalizedCurrent !== "reading" || chapterChanged;
 }
 
 function sortSectionItems(items) {
