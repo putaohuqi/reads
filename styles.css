@@ -99,6 +99,57 @@ body.modal-open {
   padding: 18px 0 32px;
 }
 
+.back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid var(--header-border);
+  border-radius: 999px;
+  background: var(--card);
+  background: color-mix(in srgb, var(--card) 84%, var(--blue-5) 16%);
+  color: var(--text);
+  box-shadow: 0 14px 28px rgba(121, 152, 179, 0.22);
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.back-to-top:hover {
+  background: var(--blue-5);
+  background: color-mix(in srgb, var(--card) 72%, var(--blue-4) 28%);
+  box-shadow: 0 18px 30px rgba(121, 152, 179, 0.3);
+}
+
+.back-to-top:focus-visible {
+  outline: 3px solid var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.back-to-top.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+body.modal-open .back-to-top {
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+}
+
 .topbar {
   position: static;
   z-index: 20;
@@ -1190,6 +1241,13 @@ button {
     justify-content: space-between;
   }
 
+  .back-to-top {
+    right: 16px;
+    bottom: 16px;
+    width: 42px;
+    height: 42px;
+  }
+
   .add-btn {
     height: 32px;
     font-size: 0.84rem;
@@ -1291,6 +1349,12 @@ button {
 
   .advanced-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top {
+    transition: none;
   }
 }
 
