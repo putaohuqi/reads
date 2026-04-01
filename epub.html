@@ -13,10 +13,23 @@
     <link rel="stylesheet" href="styles.css?v=20260331-1" />
     <style>
       /* ── epub layout ── */
-      .epub-section {
+      .epub-grid {
         margin-top: 24px;
         display: grid;
+        grid-template-columns: 3fr 2fr;
+        gap: 18px;
+        align-items: start;
+      }
+      .epub-col-left { display: grid; gap: 14px; }
+      .epub-col-right {
+        display: grid;
         gap: 14px;
+        position: sticky;
+        top: 20px;
+      }
+      @media (max-width: 640px) {
+        .epub-grid { grid-template-columns: 1fr; }
+        .epub-col-right { position: static; }
       }
 
       .epub-card {
@@ -353,88 +366,96 @@
         </div>
       </header>
 
-      <section class="epub-section">
+      <div class="epub-grid">
 
-        <!-- HOW IT WORKS -->
-        <div class="epub-card">
-          <p class="epub-card-title">how it works</p>
-          <ol class="steps">
-            <li>open a novel on readhive.org and copy the URL from your browser</li>
-            <li>paste it below and click <strong>fetch info</strong> to load the novel details</li>
-            <li>set your chapter range, then click <strong>download epub</strong></li>
-            <li>the Python server runs locally and saves the .epub to your Desktop</li>
-            <li>AirDrop it to your iPhone — it'll open straight in Books ♡</li>
-          </ol>
-        </div>
+        <!-- LEFT COLUMN -->
+        <div class="epub-col-left">
 
-        <!-- NOVEL DETAILS -->
-        <div class="epub-card">
-          <p class="epub-card-title">novel details</p>
-          <div class="epub-field">
-            <label class="epub-label" for="url">readhive url</label>
-            <input class="epub-input" type="url" id="url" placeholder="https://readhive.org/series/12345/" />
+          <!-- HOW IT WORKS -->
+          <div class="epub-card">
+            <p class="epub-card-title">how it works</p>
+            <ol class="steps">
+              <li>open a novel on readhive.org and copy the URL from your browser</li>
+              <li>paste it below and click <strong>fetch info</strong> to load the novel details</li>
+              <li>set your chapter range, then click <strong>download epub</strong></li>
+              <li>the Python server runs locally and saves the .epub to your Desktop</li>
+              <li>AirDrop it to your iPhone — it'll open straight in Books ♡</li>
+            </ol>
           </div>
-          <div id="series-info"></div>
-          <div class="epub-btn-row">
-            <button class="add-btn" id="fetch-btn" onclick="fetchInfo()">🔍 fetch info</button>
-          </div>
-        </div>
 
-        <!-- DOWNLOAD OPTIONS -->
-        <div class="epub-card" id="download-card" style="display:none;">
-          <p class="epub-card-title">download options</p>
-          <div class="epub-row-3">
+          <!-- NOVEL DETAILS -->
+          <div class="epub-card">
+            <p class="epub-card-title">novel details</p>
             <div class="epub-field">
-              <label class="epub-label" for="from-ch">from chapter</label>
-              <input class="epub-input" type="number" id="from-ch" value="1" min="1" />
+              <label class="epub-label" for="url">readhive url</label>
+              <input class="epub-input" type="url" id="url" placeholder="https://readhive.org/series/12345/" />
             </div>
-            <div class="epub-field">
-              <label class="epub-label" for="to-ch">to chapter</label>
-              <input class="epub-input" type="number" id="to-ch" min="1" />
-              <p class="epub-hint">leave blank for all</p>
-            </div>
-            <div class="epub-field">
-              <label class="epub-label" for="delay">delay (seconds)</label>
-              <input class="epub-input" type="number" id="delay" value="1.0" min="0.1" max="5" step="0.1" />
-              <p class="epub-hint">0.3–1.0 recommended</p>
+            <div id="series-info"></div>
+            <div class="epub-btn-row">
+              <button class="add-btn" id="fetch-btn" onclick="fetchInfo()">🔍 fetch info</button>
             </div>
           </div>
-          <div class="epub-btn-row">
-            <button class="epub-btn-primary" id="dl-btn" onclick="startDownload()">📥 download epub</button>
-          </div>
-          <div class="epub-progress-wrap" id="main-progress">
-            <div class="progress-label">
-              <span id="main-progress-text">downloading…</span>
-              <span id="main-progress-pct">0%</span>
+
+          <!-- DOWNLOAD OPTIONS -->
+          <div class="epub-card" id="download-card" style="display:none;">
+            <p class="epub-card-title">download options</p>
+            <div class="epub-row-3">
+              <div class="epub-field">
+                <label class="epub-label" for="from-ch">from chapter</label>
+                <input class="epub-input" type="number" id="from-ch" value="1" min="1" />
+              </div>
+              <div class="epub-field">
+                <label class="epub-label" for="to-ch">to chapter</label>
+                <input class="epub-input" type="number" id="to-ch" min="1" />
+                <p class="epub-hint">leave blank for all</p>
+              </div>
+              <div class="epub-field">
+                <label class="epub-label" for="delay">delay (seconds)</label>
+                <input class="epub-input" type="number" id="delay" value="1.0" min="0.1" max="5" step="0.1" />
+                <p class="epub-hint">0.3–1.0 recommended</p>
+              </div>
             </div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" id="main-progress-fill"></div></div>
+            <div class="epub-btn-row">
+              <button class="epub-btn-primary" id="dl-btn" onclick="startDownload()">📥 download epub</button>
+            </div>
+            <div class="epub-progress-wrap" id="main-progress">
+              <div class="progress-label">
+                <span id="main-progress-text">downloading…</span>
+                <span id="main-progress-pct">0%</span>
+              </div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="main-progress-fill"></div></div>
+            </div>
+            <div id="main-status" class="epub-status"></div>
+            <div id="main-log" class="epub-log"></div>
           </div>
-          <div id="main-status" class="epub-status"></div>
-          <div id="main-log" class="epub-log"></div>
+
+          <!-- FIRST TIME SETUP -->
+          <div class="epub-card">
+            <p class="epub-card-title">first time setup</p>
+            <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;">
+              make sure you've run
+              <code class="epub-code">pip3 install -r NOVEL-TO-EPUB/requirements.txt</code>
+              once, then start the local server with:
+            </p>
+            <div class="epub-pre-wrap">
+              <pre class="epub-pre" id="server-cmd">python3 NOVEL-TO-EPUB/readhive_server.py</pre>
+              <button class="copy-btn" onclick="copyCmd(this)">copy</button>
+            </div>
+            <p style="font-size:0.82rem; color:var(--muted); margin-top:10px;">keep that Terminal window open while using this page.</p>
+          </div>
+
         </div>
 
-        <!-- HISTORY -->
-        <div class="epub-card" id="history-card" style="display:none;">
-          <p class="epub-card-title">download history</p>
-          <div id="history-list"></div>
-        </div>
-
-        <!-- FIRST TIME SETUP -->
-        <div class="epub-card">
-          <p class="epub-card-title">first time setup</p>
-          <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;">
-            make sure you've run
-            <code class="epub-code">pip3 install -r NOVEL-TO-EPUB/requirements.txt</code>
-            once, then start the local server with:
-          </p>
-          <div class="epub-pre-wrap">
-            <pre class="epub-pre" id="server-cmd">python3 NOVEL-TO-EPUB/readhive_server.py</pre>
-            <button class="copy-btn" onclick="copyCmd(this)">copy</button>
+        <!-- RIGHT COLUMN: HISTORY -->
+        <div class="epub-col-right">
+          <div class="epub-card" id="history-card">
+            <p class="epub-card-title">download history</p>
+            <div id="history-list"></div>
+            <p id="history-empty" style="font-size:0.84rem; color:var(--muted); opacity:0.6; margin:0;">your downloads will appear here ♡</p>
           </div>
-          <p style="font-size:0.82rem; color:var(--muted); margin-top:10px;">keep that Terminal window open while using this page.</p>
         </div>
 
-      </section>
+      </div>
     </main>
 
     <script>
@@ -520,12 +541,15 @@
 
       function renderHistory() {
         const history = loadHistory();
-        const card = document.getElementById('history-card');
         const list = document.getElementById('history-list');
-        if (!history.length) { card.style.display = 'none'; return; }
-        card.style.display = 'block';
+        const empty = document.getElementById('history-empty');
         list.innerHTML = '';
-        history.forEach(item => list.appendChild(buildHistoryItem(item)));
+        if (history.length) {
+          empty.style.display = 'none';
+          history.forEach(item => list.appendChild(buildHistoryItem(item)));
+        } else {
+          empty.style.display = 'block';
+        }
       }
 
       function buildHistoryItem(item) {
