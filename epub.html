@@ -35,10 +35,24 @@
         width: 100%;
         align-self: start;
       }
-      @media (max-width: 640px) {
+      @media (max-width: 900px) {
         .epub-grid { grid-template-columns: 1fr; }
         .epub-card { backdrop-filter: none; }
         .epub-col-right { position: static; }
+        .epub-row-2,
+        .epub-row-3 { grid-template-columns: 1fr; }
+        .epub-btn-row {
+          flex-wrap: wrap;
+        }
+        .epub-btn-row > button {
+          flex: 1 1 180px;
+        }
+        .history-actions {
+          grid-template-columns: 1fr;
+        }
+        .history-remove-btn {
+          justify-self: start;
+        }
       }
 
       .epub-card {
@@ -128,9 +142,40 @@
         gap: 12px;
       }
       @media (max-width: 540px) {
-        .epub-row-2,
-        .epub-row-3 { grid-template-columns: 1fr; }
         .epub-card { padding: 16px; border-radius: 20px; }
+        .cover-preview-card {
+          flex-direction: column;
+        }
+        .cover-preview {
+          width: min(132px, 100%);
+          height: auto;
+          aspect-ratio: 88 / 124;
+        }
+        .epub-btn-row > button,
+        .history-main-actions > button,
+        .history-remove-btn {
+          width: 100%;
+        }
+        .history-main-actions {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+        .epub-pre-wrap {
+          display: grid;
+          gap: 8px;
+        }
+        .epub-pre {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          padding: 12px 14px;
+        }
+        .copy-btn {
+          position: static;
+          top: auto;
+          right: auto;
+          transform: none;
+          justify-self: end;
+        }
       }
 
       .epub-hint {
@@ -421,6 +466,9 @@
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
+        min-width: 0;
+      }
+      .history-main-actions > button {
         min-width: 0;
       }
       .history-remove-btn {
