@@ -158,6 +158,7 @@
         border: 1px solid var(--border);
         border-radius: 14px;
         background: var(--bg);
+        overflow: hidden;
       }
       .cover-preview-wrap.visible { display: block; }
       .cover-preview {
@@ -173,6 +174,7 @@
         display: flex;
         gap: 12px;
         align-items: flex-start;
+        min-width: 0;
       }
       .cover-preview-meta {
         display: grid;
@@ -360,6 +362,7 @@
       .history-item {
         padding: 14px 0;
         border-bottom: 1px solid var(--border);
+        min-width: 0;
       }
       .history-item:first-child { padding-top: 0; }
       .history-item:last-child { border-bottom: none; padding-bottom: 0; }
@@ -393,9 +396,17 @@
       }
 
       .history-actions {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: 8px;
+        min-width: 0;
+      }
+      .history-main-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-width: 0;
       }
       .history-remove-btn {
         height: 30px;
@@ -410,13 +421,26 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-left: auto;
+        justify-self: end;
         transition: background 0.15s, color 0.15s, border-color 0.15s;
       }
       .history-remove-btn:hover {
         background: #fee2e2;
         color: #e05555;
         border-color: #fca5a5;
+      }
+
+      #history-card {
+        overflow: hidden;
+      }
+
+      @media (max-width: 980px) {
+        .history-actions {
+          grid-template-columns: 1fr;
+        }
+        .history-remove-btn {
+          justify-self: start;
+        }
       }
 
       .history-op {
@@ -502,19 +526,19 @@
                 <div class="epub-field">
                   <label class="epub-label" for="cover-url">cover image url</label>
                   <input class="epub-input" type="url" id="cover-url" placeholder="https://..." />
-                </div>
-              </div>
-              <p class="epub-hint">you can edit these before downloading if ReadHive is missing or wrong</p>
-              <div class="cover-preview-wrap" id="cover-preview-wrap">
-                <div class="cover-preview-card">
-                  <img class="cover-preview" id="cover-preview" alt="cover preview" />
-                  <div class="cover-preview-meta">
-                    <p class="cover-preview-title" id="cover-preview-title"></p>
-                    <p class="cover-preview-author" id="cover-preview-author"></p>
-                    <p class="cover-preview-note">this is what the about page metadata will use</p>
+                  <div class="cover-preview-wrap" id="cover-preview-wrap">
+                    <div class="cover-preview-card">
+                      <img class="cover-preview" id="cover-preview" alt="cover preview" />
+                      <div class="cover-preview-meta">
+                        <p class="cover-preview-title" id="cover-preview-title"></p>
+                        <p class="cover-preview-author" id="cover-preview-author"></p>
+                        <p class="cover-preview-note">cover preview for the epub about page</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+              <p class="epub-hint">you can edit these before downloading if ReadHive is missing or wrong</p>
             </div>
             <div class="epub-btn-row">
               <button class="add-btn" id="fetch-btn" onclick="fetchInfo()">fetch info</button>
@@ -939,9 +963,11 @@
             <span class="history-path" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</span>
           </div>
           <div class="history-actions">
-            <button class="add-btn hi-redownload-btn">re-download</button>
-            <button class="epub-btn-secondary hi-cancel-redownload-btn" style="display:none;">cancel</button>
-            <button class="add-btn hi-addch-btn">+ add chapters</button>
+            <div class="history-main-actions">
+              <button class="add-btn hi-redownload-btn">re-download</button>
+              <button class="epub-btn-secondary hi-cancel-redownload-btn" style="display:none;">cancel</button>
+              <button class="add-btn hi-addch-btn">+ add chapters</button>
+            </div>
             <button class="history-remove-btn" title="Remove from history">remove</button>
           </div>
           <div class="history-op" id="hi-op-${item.id}" style="display:none;">
