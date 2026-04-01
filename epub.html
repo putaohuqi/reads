@@ -30,6 +30,7 @@
       @media (max-width: 640px) {
         .epub-grid { grid-template-columns: 1fr; }
         .epub-col-right { position: static; }
+        .epub-card { backdrop-filter: none; }
       }
 
       .epub-card {
@@ -376,8 +377,8 @@
             <p class="epub-card-title">how it works</p>
             <ol class="steps">
               <li>open a novel on readhive.org and copy the URL from your browser</li>
-              <li>paste it below and click <strong>fetch info</strong> to load the novel details</li>
-              <li>set your chapter range, then click <strong>download epub</strong></li>
+              <li>paste it below and click fetch info to load the novel details</li>
+              <li>set your chapter range, then click download epub</li>
               <li>the Python server runs locally and saves the .epub to your Desktop</li>
               <li>AirDrop it to your iPhone — it'll open straight in Books ♡</li>
             </ol>
@@ -394,6 +395,7 @@
             <div class="epub-btn-row">
               <button class="add-btn" id="fetch-btn" onclick="fetchInfo()">🔍 fetch info</button>
             </div>
+            <div id="fetch-status" class="epub-status"></div>
           </div>
 
           <!-- DOWNLOAD OPTIONS -->
@@ -690,11 +692,13 @@
 
       async function fetchInfo() {
         const url = document.getElementById('url').value.trim();
-        if (!url) { setEl(document.getElementById('main-status'), 'please enter a readhive url', 'error'); return; }
+        const fetchStatusEl = document.getElementById('fetch-status');
+        if (!url) { setEl(fetchStatusEl, 'please enter a readhive url', 'error'); return; }
 
         const fetchBtn = document.getElementById('fetch-btn');
         fetchBtn.disabled = true;
         fetchBtn.textContent = '⏳ fetching…';
+        setEl(fetchStatusEl, 'connecting to local server…');
         document.getElementById('series-info').classList.remove('visible');
 
         try {
@@ -718,9 +722,9 @@
 
           document.getElementById('to-ch').value = data.total_chapters;
           document.getElementById('download-card').style.display = 'block';
-          setEl(document.getElementById('main-status'), 'ready to download ♡', 'success');
+          setEl(fetchStatusEl, 'ready to download ♡', 'success');
         } catch (e) {
-          setEl(document.getElementById('main-status'), 'could not connect — is the local server running? (python3 NOVEL-TO-EPUB/readhive_server.py)', 'error');
+          setEl(fetchStatusEl, 'could not connect — is the server running? run: python3 NOVEL-TO-EPUB/readhive_server.py', 'error');
         } finally {
           fetchBtn.disabled = false;
           fetchBtn.textContent = '🔍 fetch info';

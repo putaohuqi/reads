@@ -1238,7 +1238,12 @@ button {
   }
 
   .top-actions {
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .auth-inline {
+    width: 100%;
   }
 
   .back-to-top {
