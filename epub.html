@@ -11,6 +11,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="stylesheet" href="styles.css?v=20260331-1" />
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" defer></script>
+    <script src="firebase-config.js?v=20260303-2" defer></script>
+    <script src="auth-sync.js?v=20260303-2" defer></script>
     <style>
       /* ── epub layout ── */
       .epub-grid {
@@ -451,6 +456,15 @@
             <h1>epub downloader ✦</h1>
             <p class="reorder-hint">paste a readhive url · set chapter range · save to desktop</p>
           </div>
+          <div class="top-actions">
+            <div class="auth-inline">
+              <p id="auth-status" class="auth-status">local only</p>
+              <button id="open-auth" class="chip auth-btn" type="button">sign in</button>
+              <button id="auth-sync-now" class="chip auth-btn" type="button" hidden>sync</button>
+              <button id="auth-signout" class="chip auth-btn" type="button" hidden>sign out</button>
+              <button id="refresh-app" class="chip auth-btn" type="button" title="Refresh app">refresh</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -571,10 +585,42 @@
       </div>
     </main>
 
+    <div id="auth-backdrop" class="modal-backdrop" hidden>
+      <section class="modal-card auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <div class="modal-head">
+          <h2 id="auth-title">sign in to sync</h2>
+          <button id="close-auth" class="close-btn" type="button">Close</button>
+        </div>
+
+        <form id="auth-form" class="wish-form">
+          <label for="auth-email">Email *</label>
+          <input id="auth-email" name="email" type="email" autocomplete="email" required />
+
+          <label for="auth-password">Password *</label>
+          <input
+            id="auth-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            minlength="6"
+            required
+          />
+
+          <div class="auth-actions">
+            <button id="auth-submit" type="submit" class="add-btn">sign in</button>
+            <button id="auth-switch-mode" type="button" class="close-btn">create account</button>
+          </div>
+        </form>
+
+        <p id="auth-feedback" class="auth-feedback">local-only mode right now</p>
+      </section>
+    </div>
+
     <script>
       // ── constants ──
       const SERVER = 'http://localhost:7842';
       const HISTORY_KEY = 'readhive_history';
+      const CLOUD_LIST_ID = 'epub-history';
 
       // ── generic helpers ──
       function escapeHtml(str) {
@@ -697,8 +743,22 @@
 
       // ── history management ──
       function loadHistory() {
-        try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+        try { return sanitizeHistoryItems(JSON.parse(localStorage.getItem(HISTORY_KEY)) || []); }
         catch { return []; }
+      }
+
+      function persistHistory(history) {
+        const nextHistory = sanitizeHistoryItems(history).slice(0, 30);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
+
+        const cloud = window.WishlistCloud;
+        if (cloud) {
+          const updatedAt = getLatestUpdate(nextHistory);
+          cloud.noteLocalChange(HISTORY_KEY, updatedAt);
+          cloud.saveList(CLOUD_LIST_ID, HISTORY_KEY, nextHistory);
+        }
+
+        renderHistory();
       }
 
       function saveToHistory(entry) {
@@ -708,25 +768,27 @@
           return h.series_id === entry.series_id && h.from_ch === entry.from_ch && h.to_ch === entry.to_ch;
         });
         if (idx >= 0) history.splice(idx, 1);
-        history.unshift(entry);
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 30)));
-        renderHistory();
+        history.unshift({
+          ...entry,
+          _updatedAt: Date.now(),
+        });
+        persistHistory(history);
       }
 
       function updateHistoryEntry(id, changes) {
         const history = loadHistory();
         const idx = history.findIndex(h => h.id === id);
         if (idx >= 0) {
-          Object.assign(history[idx], changes);
-          localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+          Object.assign(history[idx], changes, { _updatedAt: Date.now() });
+          persistHistory(history);
+          return;
         }
         renderHistory();
       }
 
       function removeHistory(id) {
         const history = loadHistory().filter(h => h.id !== id);
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-        renderHistory();
+        persistHistory(history);
       }
 
       function renderHistory() {
@@ -740,6 +802,126 @@
         } else {
           empty.style.display = 'block';
         }
+      }
+
+      function sanitizeHistoryItems(items) {
+        if (!Array.isArray(items)) return [];
+
+        return items
+          .filter((item) => item && typeof item === 'object')
+          .map((item, index) => {
+            const now = Date.now();
+            const title = String(item.title || '');
+            const seriesId = String(item.series_id || '');
+            const fallbackId = title || seriesId || `epub-${now}-${index}`;
+
+            return {
+              ...item,
+              id: String(item.id || fallbackId),
+              title,
+              author: String(item.author || ''),
+              description: String(item.description || ''),
+              cover_url: String(item.cover_url || ''),
+              url: String(item.url || ''),
+              path: String(item.path || ''),
+              series_id: seriesId,
+              from_ch: Number.isFinite(Number(item.from_ch)) ? Number(item.from_ch) : 1,
+              to_ch: Number.isFinite(Number(item.to_ch)) ? Number(item.to_ch) : 1,
+              date: item.date || new Date(now).toISOString(),
+              _updatedAt: normalizeTimestamp(item._updatedAt || item.updatedAt || item.date, now),
+            };
+          });
+      }
+
+      function normalizeTimestamp(value, fallback) {
+        if (typeof value === 'string') {
+          const parsedDate = Date.parse(value);
+          if (Number.isFinite(parsedDate) && parsedDate > 0) return parsedDate;
+        }
+
+        const parsed = Number(value);
+        if (Number.isFinite(parsed) && parsed > 0) return parsed;
+        return fallback;
+      }
+
+      function getLatestUpdate(items) {
+        if (!Array.isArray(items) || !items.length) return 0;
+
+        return items.reduce((latest, item) => {
+          const updatedAt = normalizeTimestamp(item._updatedAt || item.updatedAt || item.date, 0);
+          return updatedAt > latest ? updatedAt : latest;
+        }, 0);
+      }
+
+      function initializeCloudSync() {
+        const cloud = window.WishlistCloud;
+        if (!cloud) return;
+
+        cloud.noteLocalChange(HISTORY_KEY, getLatestUpdate(loadHistory()));
+
+        let syncTimerId = 0;
+
+        const runSync = async ({ throwOnError = false } = {}) => {
+          if (!cloud.getCurrentUser()) return;
+
+          try {
+            const syncedItems = sanitizeHistoryItems(await cloud.syncList(CLOUD_LIST_ID, HISTORY_KEY, loadHistory()));
+            if (JSON.stringify(syncedItems) === JSON.stringify(loadHistory())) {
+              return;
+            }
+
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(syncedItems));
+            renderHistory();
+          } catch (error) {
+            console.error('Cloud sync failed for epub history:', error);
+            if (throwOnError) throw error;
+          }
+        };
+
+        if (typeof cloud.onSyncRequest === 'function') {
+          cloud.onSyncRequest(() => runSync({ throwOnError: true }));
+        }
+
+        cloud.onAuthChange(async (user) => {
+          if (syncTimerId) {
+            window.clearInterval(syncTimerId);
+            syncTimerId = 0;
+          }
+
+          if (!user) return;
+
+          await runSync();
+          syncTimerId = window.setInterval(runSync, 12000);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            runSync();
+          }
+        });
+      }
+
+      async function handleManualRefresh() {
+        const refreshButton = document.getElementById('refresh-app');
+        if (refreshButton) {
+          refreshButton.disabled = true;
+          refreshButton.textContent = 'refreshing...';
+        }
+
+        const cloud = window.WishlistCloud;
+        if (cloud && typeof cloud.getCurrentUser === 'function' && cloud.getCurrentUser()) {
+          try {
+            if (typeof cloud.requestSync === 'function') {
+              await cloud.requestSync();
+            }
+          } catch (error) {
+            console.error('Refresh sync failed:', error);
+          }
+        }
+
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set('refresh', String(Date.now()));
+        window.location.replace(nextUrl.toString());
       }
 
       function buildHistoryItem(item) {
@@ -1178,12 +1360,22 @@
 
       // ── init ──
       renderHistory();
+      if (!localStorage.getItem(HISTORY_KEY)) {
+        persistHistory(loadHistory());
+      }
+      window.addEventListener('storage', (event) => {
+        if (event.key === HISTORY_KEY) {
+          renderHistory();
+        }
+      });
+      document.getElementById('refresh-app')?.addEventListener('click', handleManualRefresh);
       document.getElementById('author').addEventListener('input', () => {
         updateCoverPreview(document.getElementById('cover-url').value.trim());
       });
       document.getElementById('cover-url').addEventListener('input', (event) => {
         updateCoverPreview(event.target.value.trim());
       });
+      window.addEventListener('load', initializeCloudSync);
     </script>
   </body>
 </html>
