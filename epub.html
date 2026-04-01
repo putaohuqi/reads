@@ -12,12 +12,11 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="stylesheet" href="styles.css?v=20260331-1" />
     <style>
-      /* ── epub-specific styles ── */
+      /* ── epub layout ── */
       .epub-section {
         margin-top: 24px;
         display: grid;
         gap: 14px;
-        max-width: 680px;
       }
 
       .epub-card {
@@ -38,8 +37,8 @@
         margin: 0 0 14px;
       }
 
-      /* steps list */
-      .steps { list-style: none; padding: 0; margin: 0; }
+      /* ── steps ── */
+      .steps { list-style: none; padding: 0; margin: 0; counter-reset: steps; }
       .steps li {
         display: flex;
         gap: 12px;
@@ -65,9 +64,8 @@
         align-items: center;
         justify-content: center;
       }
-      .steps { counter-reset: steps; }
 
-      /* form fields */
+      /* ── form fields ── */
       .epub-field { margin-bottom: 12px; }
       .epub-field:last-child { margin-bottom: 0; }
       .epub-label {
@@ -102,6 +100,10 @@
         grid-template-columns: 1fr 1fr 1fr;
         gap: 12px;
       }
+      @media (max-width: 540px) {
+        .epub-row-3 { grid-template-columns: 1fr; }
+        .epub-card { padding: 16px; border-radius: 20px; }
+      }
 
       .epub-hint {
         font-size: 0.72rem;
@@ -110,7 +112,7 @@
         opacity: 0.8;
       }
 
-      /* series info */
+      /* ── series info ── */
       #series-info {
         display: none;
         background: var(--chip-active-bg);
@@ -124,7 +126,7 @@
       }
       #series-info.visible { display: block; }
 
-      /* button row */
+      /* ── button row ── */
       .epub-btn-row { display: flex; gap: 10px; margin-top: 14px; }
 
       .epub-btn-primary {
@@ -153,9 +155,9 @@
         transform: none;
       }
 
-      /* progress */
-      #progress-wrap { display: none; margin-top: 14px; }
-      #progress-wrap.visible { display: block; }
+      /* ── progress ── */
+      .epub-progress-wrap { display: none; margin-top: 14px; }
+      .epub-progress-wrap.visible { display: block; }
       .progress-label {
         display: flex;
         justify-content: space-between;
@@ -178,19 +180,19 @@
         transition: width 0.3s ease;
       }
 
-      /* status */
-      #status {
+      /* ── status ── */
+      .epub-status {
         font-size: 0.82rem;
         color: var(--muted);
         margin-top: 8px;
         min-height: 16px;
         font-weight: 500;
       }
-      #status.success { color: #3aaa6e; }
-      #status.error { color: #e05555; }
+      .epub-status.success { color: #3aaa6e; }
+      .epub-status.error { color: #e05555; }
 
-      /* log */
-      #log {
+      /* ── log ── */
+      .epub-log {
         display: none;
         margin-top: 10px;
         max-height: 150px;
@@ -204,22 +206,46 @@
         line-height: 1.8;
         font-weight: 500;
       }
-      #log.visible { display: block; }
-      #log .log-ok { color: #3aaa6e; }
-      #log .log-err { color: #e05555; }
-      #log .log-info { color: var(--blue-1); }
+      .epub-log.visible { display: block; }
+      .epub-log .log-ok { color: #3aaa6e; }
+      .epub-log .log-err { color: #e05555; }
+      .epub-log .log-info { color: var(--blue-1); }
 
-      /* setup code */
-      .epub-pre {
+      /* ── setup code block ── */
+      .epub-pre-wrap {
+        position: relative;
         margin-top: 10px;
+      }
+      .epub-pre {
         background: var(--bg);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 10px 14px;
+        padding: 10px 44px 10px 14px;
         font-size: 0.82rem;
         color: var(--blue-1);
         overflow-x: auto;
+        margin: 0;
       }
+      .copy-btn {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        height: 26px;
+        padding: 0 9px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.72rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .copy-btn:hover { background: var(--chip-active-bg); color: var(--text); }
+      .copy-btn.copied { color: #3aaa6e; border-color: #3aaa6e; }
+
       .epub-code {
         background: var(--bg);
         border: 1px solid var(--border);
@@ -227,6 +253,87 @@
         padding: 1px 6px;
         font-size: 0.78rem;
       }
+
+      /* ── history ── */
+      .history-item {
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .history-item:first-child { padding-top: 0; }
+      .history-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+      .history-info {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        margin-bottom: 10px;
+      }
+      .history-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .history-meta {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .history-path {
+        font-size: 0.7rem;
+        color: var(--muted);
+        opacity: 0.65;
+        font-family: monospace;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .history-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .history-remove-btn {
+        height: 30px;
+        width: 30px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.78rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .history-remove-btn:hover {
+        background: #fee2e2;
+        color: #e05555;
+        border-color: #fca5a5;
+      }
+
+      .history-op {
+        margin-top: 10px;
+      }
+
+      .add-chapters-panel {
+        padding-top: 12px;
+        margin-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+
+      .merge-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-top: 10px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .merge-label input { cursor: pointer; }
     </style>
   </head>
   <body>
@@ -295,15 +402,21 @@
           <div class="epub-btn-row">
             <button class="epub-btn-primary" id="dl-btn" onclick="startDownload()">📥 download epub</button>
           </div>
-          <div id="progress-wrap">
+          <div class="epub-progress-wrap" id="main-progress">
             <div class="progress-label">
-              <span id="progress-text">downloading…</span>
-              <span id="progress-pct">0%</span>
+              <span id="main-progress-text">downloading…</span>
+              <span id="main-progress-pct">0%</span>
             </div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="main-progress-fill"></div></div>
           </div>
-          <div id="status"></div>
-          <div id="log"></div>
+          <div id="main-status" class="epub-status"></div>
+          <div id="main-log" class="epub-log"></div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="epub-card" id="history-card" style="display:none;">
+          <p class="epub-card-title">download history</p>
+          <div id="history-list"></div>
         </div>
 
         <!-- FIRST TIME SETUP -->
@@ -314,7 +427,10 @@
             <code class="epub-code">pip3 install -r NOVEL-TO-EPUB/requirements.txt</code>
             once, then start the local server with:
           </p>
-          <pre class="epub-pre">python3 NOVEL-TO-EPUB/readhive_server.py</pre>
+          <div class="epub-pre-wrap">
+            <pre class="epub-pre" id="server-cmd">python3 NOVEL-TO-EPUB/readhive_server.py</pre>
+            <button class="copy-btn" onclick="copyCmd(this)">copy</button>
+          </div>
           <p style="font-size:0.82rem; color:var(--muted); margin-top:10px;">keep that Terminal window open while using this page.</p>
         </div>
 
@@ -322,44 +438,239 @@
     </main>
 
     <script>
-      let seriesId = null;
-      let totalChapters = 0;
-      let seriesTitle = '';
-      let downloading = false;
-
+      // ── constants ──
       const SERVER = 'http://localhost:7842';
+      const HISTORY_KEY = 'readhive_history';
 
-      function setStatus(msg, type = '') {
-        const el = document.getElementById('status');
-        el.textContent = msg;
-        el.className = type;
+      // ── generic helpers ──
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
 
-      function log(msg, type = '') {
-        const el = document.getElementById('log');
+      function generateId() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+      }
+
+      function setEl(el, msg, cls = '') {
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'epub-status' + (cls ? ' ' + cls : '');
+      }
+
+      function addToLog(el, msg, cls = '') {
+        if (!el) return;
         el.classList.add('visible');
         const line = document.createElement('div');
-        line.className = type ? `log-${type}` : '';
+        if (cls) line.className = `log-${cls}`;
         line.textContent = msg;
         el.appendChild(line);
         el.scrollTop = el.scrollHeight;
       }
 
-      function setProgress(current, total) {
-        const pct = Math.round((current / total) * 100);
-        document.getElementById('progress-fill').style.width = pct + '%';
-        document.getElementById('progress-pct').textContent = pct + '%';
-        document.getElementById('progress-text').textContent = `chapter ${current} of ${total}`;
+      function updateProgress(fillEl, pctEl, textEl, current, total) {
+        const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+        if (fillEl) fillEl.style.width = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+        if (textEl) textEl.textContent = total > 0 ? `chapter ${current} of ${total}` : 'starting…';
       }
+
+      // ── copy button ──
+      function copyCmd(btn) {
+        const text = document.getElementById('server-cmd').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = 'copied!';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+        });
+      }
+
+      // ── history management ──
+      function loadHistory() {
+        try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+        catch { return []; }
+      }
+
+      function saveToHistory(entry) {
+        const history = loadHistory();
+        const idx = history.findIndex(h => h.series_id === entry.series_id);
+        if (idx >= 0) history.splice(idx, 1);
+        history.unshift(entry);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 30)));
+        renderHistory();
+      }
+
+      function updateHistoryEntry(id, changes) {
+        const history = loadHistory();
+        const idx = history.findIndex(h => h.id === id);
+        if (idx >= 0) {
+          Object.assign(history[idx], changes);
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        }
+        renderHistory();
+      }
+
+      function removeHistory(id) {
+        const history = loadHistory().filter(h => h.id !== id);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        renderHistory();
+      }
+
+      function renderHistory() {
+        const history = loadHistory();
+        const card = document.getElementById('history-card');
+        const list = document.getElementById('history-list');
+        if (!history.length) { card.style.display = 'none'; return; }
+        card.style.display = 'block';
+        list.innerHTML = '';
+        history.forEach(item => list.appendChild(buildHistoryItem(item)));
+      }
+
+      function buildHistoryItem(item) {
+        const dateStr = new Date(item.date).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        });
+
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.id = `hi-${item.id}`;
+        div.innerHTML = `
+          <div class="history-info">
+            <strong class="history-title">${escapeHtml(item.title)}</strong>
+            <span class="history-meta">Ch ${item.from_ch}–${item.to_ch} · ${dateStr}</span>
+            <span class="history-path" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</span>
+          </div>
+          <div class="history-actions">
+            <button class="add-btn hi-redownload-btn">↺ re-download</button>
+            <button class="add-btn hi-addch-btn">+ add chapters</button>
+            <button class="history-remove-btn" title="Remove from history">✕</button>
+          </div>
+          <div class="history-op" id="hi-op-${item.id}" style="display:none;">
+            <div class="progress-label" style="margin-top:10px;">
+              <span id="hi-op-text-${item.id}">downloading…</span>
+              <span id="hi-op-pct-${item.id}">0%</span>
+            </div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="hi-op-fill-${item.id}"></div></div>
+            <div id="hi-op-status-${item.id}" class="epub-status"></div>
+          </div>
+          <div class="add-chapters-panel" id="hi-panel-${item.id}" style="display:none;">
+            <div class="epub-row-3">
+              <div class="epub-field">
+                <label class="epub-label">from ch</label>
+                <input class="epub-input" type="number" id="hi-from-${item.id}" value="${item.to_ch + 1}" min="1" />
+              </div>
+              <div class="epub-field">
+                <label class="epub-label">to ch</label>
+                <input class="epub-input" type="number" id="hi-to-${item.id}" min="1" />
+                <p class="epub-hint">leave blank to auto-detect</p>
+              </div>
+              <div class="epub-field">
+                <label class="epub-label">delay (sec)</label>
+                <input class="epub-input" type="number" id="hi-delay-${item.id}" value="1.0" min="0.1" max="5" step="0.1" />
+              </div>
+            </div>
+            <label class="merge-label">
+              <input type="checkbox" id="hi-merge-${item.id}" checked />
+              merge into existing epub (replaces file)
+            </label>
+            <div class="epub-btn-row">
+              <button class="epub-btn-primary hi-dl-btn">📥 download & merge</button>
+            </div>
+            <div class="history-op" id="hi-panel-op-${item.id}" style="display:none;">
+              <div class="progress-label" style="margin-top:10px;">
+                <span id="hi-panel-text-${item.id}">downloading…</span>
+                <span id="hi-panel-pct-${item.id}">0%</span>
+              </div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="hi-panel-fill-${item.id}"></div></div>
+              <div id="hi-panel-status-${item.id}" class="epub-status"></div>
+              <div id="hi-panel-log-${item.id}" class="epub-log"></div>
+            </div>
+          </div>
+        `;
+
+        div.querySelector('.hi-redownload-btn').onclick = () => redownload(item, div);
+        div.querySelector('.hi-addch-btn').onclick = () => {
+          const panel = document.getElementById(`hi-panel-${item.id}`);
+          panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        };
+        div.querySelector('.history-remove-btn').onclick = () => removeHistory(item.id);
+        div.querySelector('.hi-dl-btn').onclick = () => addChapters(item, div);
+
+        return div;
+      }
+
+      // ── core streaming download ──
+      async function streamDownload(params, els, onDone) {
+        const { progressWrap, fillEl, pctEl, textEl, statusEl, logEl } = els;
+
+        if (progressWrap) progressWrap.style.display = 'block';
+        if (logEl) { logEl.innerHTML = ''; logEl.classList.add('visible'); }
+        updateProgress(fillEl, pctEl, textEl, 0, 1);
+        setEl(statusEl, 'starting download…');
+
+        try {
+          const res = await fetch(`${SERVER}/download`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params)
+          });
+          if (!res.ok) throw new Error(await res.text());
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let done = false;
+
+          while (!done) {
+            const { value, done: d } = await reader.read();
+            done = d;
+            if (value) buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const msg = JSON.parse(line);
+                if (msg.type === 'progress') {
+                  updateProgress(fillEl, pctEl, textEl, msg.current, msg.total);
+                  addToLog(logEl, `✓ ${msg.chapter_title}`, 'ok');
+                } else if (msg.type === 'skip') {
+                  addToLog(logEl, `✗ chapter ${msg.chapter} failed — skipped`, 'err');
+                } else if (msg.type === 'info') {
+                  addToLog(logEl, msg.message, 'info');
+                } else if (msg.type === 'done') {
+                  setEl(statusEl, `✓ saved to ${msg.path}`, 'success');
+                  addToLog(logEl, `📚 epub saved: ${msg.path}`, 'info');
+                  if (onDone) onDone(msg);
+                } else if (msg.type === 'error') {
+                  setEl(statusEl, msg.message, 'error');
+                }
+              } catch {}
+            }
+          }
+        } catch (e) {
+          setEl(statusEl, 'download failed — check terminal for errors', 'error');
+        }
+      }
+
+      // ── main fetch info ──
+      let seriesId = null;
+      let totalChapters = 0;
+      let seriesTitle = '';
+      let seriesAuthor = '';
+      let seriesUrl = '';
+      let mainDownloading = false;
 
       async function fetchInfo() {
         const url = document.getElementById('url').value.trim();
-        if (!url) { setStatus('please enter a readhive url', 'error'); return; }
+        if (!url) { setEl(document.getElementById('main-status'), 'please enter a readhive url', 'error'); return; }
 
         const fetchBtn = document.getElementById('fetch-btn');
         fetchBtn.disabled = true;
         fetchBtn.textContent = '⏳ fetching…';
-        setStatus('connecting to local server…');
         document.getElementById('series-info').classList.remove('visible');
 
         try {
@@ -374,6 +685,8 @@
           seriesId = data.series_id;
           totalChapters = data.total_chapters;
           seriesTitle = data.title;
+          seriesAuthor = data.author || '';
+          seriesUrl = url;
 
           const info = document.getElementById('series-info');
           info.textContent = `📖 ${data.title}${data.author ? ' · by ' + data.author : ''} · ${data.total_chapters} chapters`;
@@ -381,82 +694,182 @@
 
           document.getElementById('to-ch').value = data.total_chapters;
           document.getElementById('download-card').style.display = 'block';
-          setStatus('ready to download ♡', 'success');
+          setEl(document.getElementById('main-status'), 'ready to download ♡', 'success');
         } catch (e) {
-          setStatus('could not connect — is the local server running? (python3 NOVEL-TO-EPUB/readhive_server.py)', 'error');
+          setEl(document.getElementById('main-status'), 'could not connect — is the local server running? (python3 NOVEL-TO-EPUB/readhive_server.py)', 'error');
         } finally {
           fetchBtn.disabled = false;
           fetchBtn.textContent = '🔍 fetch info';
         }
       }
 
+      // ── main download ──
       async function startDownload() {
-        if (!seriesId || downloading) return;
+        if (!seriesId || mainDownloading) return;
         const fromCh = parseInt(document.getElementById('from-ch').value) || 1;
         const toCh = parseInt(document.getElementById('to-ch').value) || totalChapters;
         const delay = parseFloat(document.getElementById('delay').value) || 1.0;
 
-        if (fromCh > toCh) { setStatus('from chapter must be ≤ to chapter', 'error'); return; }
+        if (fromCh > toCh) {
+          setEl(document.getElementById('main-status'), 'from chapter must be ≤ to chapter', 'error');
+          return;
+        }
 
-        downloading = true;
+        mainDownloading = true;
         document.getElementById('dl-btn').disabled = true;
         document.getElementById('fetch-btn').disabled = true;
 
-        const logEl = document.getElementById('log');
+        const logEl = document.getElementById('main-log');
         logEl.innerHTML = '';
-        logEl.classList.add('visible');
 
-        const progressWrap = document.getElementById('progress-wrap');
-        progressWrap.classList.add('visible');
-        setProgress(0, toCh - fromCh + 1);
-        setStatus('starting download…');
-
-        try {
-          const res = await fetch(`${SERVER}/download`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ series_id: seriesId, from_ch: fromCh, to_ch: toCh, delay, title: seriesTitle })
-          });
-
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          let done = false;
-
-          while (!done) {
-            const { value, done: streamDone } = await reader.read();
-            done = streamDone;
-            if (value) buffer += decoder.decode(value, { stream: true });
-
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-
-            for (const line of lines) {
-              if (!line.trim()) continue;
-              try {
-                const msg = JSON.parse(line);
-                if (msg.type === 'progress') {
-                  setProgress(msg.current, msg.total);
-                  log(`✓ ${msg.chapter_title}`, 'ok');
-                } else if (msg.type === 'skip') {
-                  log(`✗ chapter ${msg.chapter} failed — skipped`, 'err');
-                } else if (msg.type === 'done') {
-                  setStatus(`✓ saved to ${msg.path}`, 'success');
-                  log(`📚 epub saved: ${msg.path}`, 'info');
-                } else if (msg.type === 'error') {
-                  setStatus(msg.message, 'error');
-                }
-              } catch {}
-            }
+        await streamDownload(
+          { series_id: seriesId, from_ch: fromCh, to_ch: toCh, delay, title: seriesTitle },
+          {
+            progressWrap: document.getElementById('main-progress'),
+            fillEl: document.getElementById('main-progress-fill'),
+            pctEl: document.getElementById('main-progress-pct'),
+            textEl: document.getElementById('main-progress-text'),
+            statusEl: document.getElementById('main-status'),
+            logEl,
+          },
+          (msg) => {
+            saveToHistory({
+              id: generateId(),
+              series_id: seriesId,
+              title: seriesTitle,
+              author: seriesAuthor,
+              url: seriesUrl,
+              from_ch: msg.from_ch,
+              to_ch: msg.to_ch,
+              date: new Date().toISOString(),
+              path: msg.path,
+            });
           }
-        } catch (e) {
-          setStatus('download failed — check the terminal for errors', 'error');
-        } finally {
-          downloading = false;
-          document.getElementById('dl-btn').disabled = false;
-          document.getElementById('fetch-btn').disabled = false;
-        }
+        );
+
+        mainDownloading = false;
+        document.getElementById('dl-btn').disabled = false;
+        document.getElementById('fetch-btn').disabled = false;
       }
+
+      // ── history: re-download ──
+      async function redownload(item, itemEl) {
+        const btn = itemEl.querySelector('.hi-redownload-btn');
+        btn.disabled = true;
+        btn.textContent = '⏳ downloading…';
+
+        const opEl = document.getElementById(`hi-op-${item.id}`);
+        opEl.style.display = 'block';
+
+        await streamDownload(
+          { series_id: item.series_id, from_ch: item.from_ch, to_ch: item.to_ch, delay: 1.0, title: item.title },
+          {
+            progressWrap: opEl,
+            fillEl: document.getElementById(`hi-op-fill-${item.id}`),
+            pctEl: document.getElementById(`hi-op-pct-${item.id}`),
+            textEl: document.getElementById(`hi-op-text-${item.id}`),
+            statusEl: document.getElementById(`hi-op-status-${item.id}`),
+            logEl: null,
+          },
+          (msg) => {
+            updateHistoryEntry(item.id, { path: msg.path, date: new Date().toISOString() });
+          }
+        );
+
+        btn.disabled = false;
+        btn.textContent = '↺ re-download';
+      }
+
+      // ── history: add chapters ──
+      async function addChapters(item, itemEl) {
+        const fromCh = parseInt(document.getElementById(`hi-from-${item.id}`).value) || (item.to_ch + 1);
+        let toCh = parseInt(document.getElementById(`hi-to-${item.id}`).value) || 0;
+        const delay = parseFloat(document.getElementById(`hi-delay-${item.id}`).value) || 1.0;
+        const doMerge = document.getElementById(`hi-merge-${item.id}`).checked;
+        const statusEl = document.getElementById(`hi-panel-status-${item.id}`);
+        const dlBtn = itemEl.querySelector('.hi-dl-btn');
+
+        dlBtn.disabled = true;
+
+        // Auto-detect latest chapter count if to_ch is blank
+        if (!toCh) {
+          setEl(statusEl, 'fetching latest chapter count…');
+          try {
+            const res = await fetch(`${SERVER}/fetch-info`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: item.url })
+            });
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            toCh = data.total_chapters;
+            document.getElementById(`hi-to-${item.id}`).value = toCh;
+          } catch {
+            setEl(statusEl, 'could not auto-detect chapter count — please enter it manually', 'error');
+            dlBtn.disabled = false;
+            return;
+          }
+        }
+
+        if (fromCh > toCh) {
+          setEl(statusEl, 'from chapter must be ≤ to chapter', 'error');
+          dlBtn.disabled = false;
+          return;
+        }
+
+        const params = {
+          series_id: item.series_id,
+          from_ch: fromCh,
+          to_ch: toCh,
+          delay,
+          title: item.title,
+        };
+        if (doMerge) {
+          params.merge_path = item.path;
+          params.original_from_ch = item.from_ch;
+        }
+
+        const panelOpEl = document.getElementById(`hi-panel-op-${item.id}`);
+        panelOpEl.style.display = 'block';
+
+        const logEl = document.getElementById(`hi-panel-log-${item.id}`);
+        logEl.innerHTML = '';
+
+        await streamDownload(params, {
+          progressWrap: panelOpEl,
+          fillEl: document.getElementById(`hi-panel-fill-${item.id}`),
+          pctEl: document.getElementById(`hi-panel-pct-${item.id}`),
+          textEl: document.getElementById(`hi-panel-text-${item.id}`),
+          statusEl,
+          logEl,
+        }, (msg) => {
+          if (doMerge) {
+            updateHistoryEntry(item.id, {
+              from_ch: msg.from_ch,
+              to_ch: msg.to_ch,
+              path: msg.path,
+              date: new Date().toISOString(),
+            });
+          } else {
+            saveToHistory({
+              id: generateId(),
+              series_id: item.series_id,
+              title: item.title,
+              author: item.author,
+              url: item.url,
+              from_ch: msg.from_ch,
+              to_ch: msg.to_ch,
+              date: new Date().toISOString(),
+              path: msg.path,
+            });
+          }
+        });
+
+        dlBtn.disabled = false;
+      }
+
+      // ── init ──
+      renderHistory();
     </script>
   </body>
 </html>

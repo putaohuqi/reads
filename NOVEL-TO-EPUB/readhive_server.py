@@ -3,7 +3,7 @@
 ReadHive → EPUB local server
 Runs on http://localhost:7842 and is used by epub.html.
 
-Start with:  python3 readhive_server.py
+Start with:  python3 NOVEL-TO-EPUB/readhive_server.py
 Stop with:   Ctrl-C
 """
 
@@ -21,7 +21,7 @@ from flask import Flask, Response, request
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # allow requests from epub.html (any origin, including file://)
+CORS(app)
 
 PORT = 7842
 
@@ -37,13 +37,11 @@ HEADERS = {
 
 
 def parse_series_url(url: str) -> str | None:
-    """Extract series ID from a readhive.org URL."""
     m = re.search(r"readhive\.org/series/(\d+)", url)
     return m.group(1) if m else None
 
 
 def fetch_series_info(series_id: str) -> tuple[str, str, str, int]:
-    """Return (title, author, description, total_chapters) for a series."""
     url = f"https://readhive.org/series/{series_id}/"
     r = requests.get(url, headers=HEADERS, timeout=15)
     r.raise_for_status()
@@ -51,7 +49,6 @@ def fetch_series_info(series_id: str) -> tuple[str, str, str, int]:
 
     title = (soup.find("h1") or soup.find("h2") or soup.new_tag("x")).get_text(strip=True)
 
-    # Author
     author = ""
     for tag in soup.find_all(string=re.compile(r"Author", re.I)):
         parent = tag.parent
@@ -60,7 +57,6 @@ def fetch_series_info(series_id: str) -> tuple[str, str, str, int]:
             author = sib.get_text(strip=True)
             break
 
-    # Description / synopsis
     desc = ""
     for sel in ["[class*='synopsis']", "[class*='description']", "[class*='summary']"]:
         el = soup.select_one(sel)
@@ -68,7 +64,6 @@ def fetch_series_info(series_id: str) -> tuple[str, str, str, int]:
             desc = el.get_text(strip=True)
             break
 
-    # Count chapters via links matching /series/{id}/{number}
     chapter_links = set()
     for a in soup.find_all("a", href=True):
         m = re.search(rf"/series/{series_id}/(\d+)/?$", a["href"])
@@ -80,7 +75,6 @@ def fetch_series_info(series_id: str) -> tuple[str, str, str, int]:
 
 
 def fetch_chapter(series_id: str, chapter_num: int) -> tuple[str, str]:
-    """Return (chapter_title, html_content) for one chapter."""
     url = f"https://readhive.org/series/{series_id}/{chapter_num}/"
     r = requests.get(url, headers=HEADERS, timeout=15)
     r.raise_for_status()
@@ -102,11 +96,31 @@ def fetch_chapter(series_id: str, chapter_num: int) -> tuple[str, str]:
     return chapter_title, html
 
 
-# ─── EPUB builder ─────────────────────────────────────────────────────────────
+# ─── EPUB helpers ─────────────────────────────────────────────────────────────
+
+def read_epub_chapters(epub_path: str) -> list[tuple[str, str]]:
+    """Extract (title, html_content) from an existing epub, stripping the h2 wrapper."""
+    book = epub.read_epub(epub_path)
+    chapters = []
+    for item in book.get_items():
+        if not isinstance(item, epub.EpubHtml):
+            continue
+        if not item.file_name.startswith("chapter_"):
+            continue
+        content = item.content
+        if isinstance(content, bytes):
+            content = content.decode("utf-8")
+        # Strip the <h2> title wrapper that build_epub added
+        soup = BeautifulSoup(content, "html.parser")
+        h2 = soup.find("h2")
+        if h2:
+            h2.decompose()
+        chapters.append((item.title, str(soup)))
+    return chapters
+
 
 def build_epub(title: str, author: str, description: str,
                chapters: list[tuple[str, str]], output_path: str) -> None:
-    """chapters: list of (chapter_title, html_content) tuples."""
     book = epub.EpubBook()
     book.set_identifier(str(uuid.uuid4()))
     book.set_title(title)
@@ -162,23 +176,15 @@ def route_fetch_info():
     url = (data or {}).get("url", "").strip()
     if not url:
         return "missing url", 400
-
     series_id = parse_series_url(url)
     if not series_id:
         return "could not find series ID in URL", 400
-
     try:
         title, author, desc, total = fetch_series_info(series_id)
     except Exception as e:
         return str(e), 502
-
-    return {
-        "series_id": series_id,
-        "title": title,
-        "author": author,
-        "description": desc,
-        "total_chapters": total,
-    }
+    return {"series_id": series_id, "title": title, "author": author,
+            "description": desc, "total_chapters": total}
 
 
 @app.post("/download")
@@ -189,18 +195,44 @@ def route_download():
     to_ch = int(data.get("to_ch", 1))
     delay = float(data.get("delay", 1.0))
     title = data.get("title", f"series_{series_id}")
+    merge_path = data.get("merge_path", "").strip()
+    original_from_ch = int(data.get("original_from_ch", from_ch))
 
     if not series_id:
         return "missing series_id", 400
 
     def generate():
-        chapters = []
+        # ── load existing epub if merging ──
+        existing_chapters = []
+        effective_from_ch = from_ch  # what to report back as the epub's start
+
+        if merge_path and os.path.isfile(merge_path):
+            try:
+                existing_chapters = read_epub_chapters(merge_path)
+                effective_from_ch = original_from_ch
+                yield json.dumps({
+                    "type": "info",
+                    "message": f"loaded {len(existing_chapters)} existing chapters from epub"
+                }) + "\n"
+            except Exception as e:
+                yield json.dumps({
+                    "type": "info",
+                    "message": f"could not read existing epub ({e}) — saving new file instead"
+                }) + "\n"
+        elif merge_path:
+            yield json.dumps({
+                "type": "info",
+                "message": "existing epub not found — saving new file instead"
+            }) + "\n"
+
+        # ── download new chapters ──
+        new_chapters = []
         total = to_ch - from_ch + 1
 
         for i, ch_num in enumerate(range(from_ch, to_ch + 1)):
             try:
                 ch_title, ch_html = fetch_chapter(series_id, ch_num)
-                chapters.append((ch_title, ch_html))
+                new_chapters.append((ch_title, ch_html))
                 yield json.dumps({
                     "type": "progress",
                     "current": i + 1,
@@ -213,14 +245,34 @@ def route_download():
             if i < total - 1:
                 time.sleep(delay)
 
-        # Build EPUB
+        # ── build epub ──
+        all_chapters = existing_chapters + new_chapters
         safe_title = re.sub(r'[\\/*?:"<>|]', "_", title)
-        output_path = str(
-            Path.home() / "Desktop" / f"{safe_title} Ch{from_ch}-{to_ch}.epub"
-        )
+
+        if existing_chapters and merge_path:
+            # Save with updated chapter range, in same folder as original
+            output_path = str(
+                Path(merge_path).parent / f"{safe_title} Ch{effective_from_ch}-{to_ch}.epub"
+            )
+        else:
+            output_path = str(
+                Path.home() / "Desktop" / f"{safe_title} Ch{from_ch}-{to_ch}.epub"
+            )
+
         try:
-            build_epub(title, "", "", chapters, output_path)
-            yield json.dumps({"type": "done", "path": output_path}) + "\n"
+            build_epub(title, "", "", all_chapters, output_path)
+            # Remove old file if we merged into a new filename
+            if existing_chapters and merge_path and merge_path != output_path:
+                try:
+                    os.remove(merge_path)
+                except OSError:
+                    pass
+            yield json.dumps({
+                "type": "done",
+                "path": output_path,
+                "from_ch": effective_from_ch,
+                "to_ch": to_ch,
+            }) + "\n"
         except Exception as e:
             yield json.dumps({"type": "error", "message": str(e)}) + "\n"
 
