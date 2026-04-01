@@ -1,0 +1,5 @@
+requests
+beautifulsoup4
+EbookLib
+flask
+flask-cors
