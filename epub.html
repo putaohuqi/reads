@@ -1,503 +1,461 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>epub · reads</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#9abddc" />
+    <title>epub · reads</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css?v=20260331-1" />
+    <style>
+      /* ── epub-specific styles ── */
+      .epub-section {
+        margin-top: 24px;
+        display: grid;
+        gap: 14px;
+        max-width: 680px;
+      }
 
-    :root {
-      --bg: #f5fbff;
-      --surface: #ffffff;
-      --border: #e5edf5;
-      --text: #111111;
-      --text-2: #7b7b85;
-      --accent: #7bb8f5;
-      --accent-dark: #4a9de8;
-      --radius: 18px;
-      --shadow: 0 2px 8px rgba(0,0,0,0.03);
-      --shadow-md: 0 4px 20px rgba(0,0,0,0.07);
-    }
+      .epub-card {
+        background: var(--header-bg);
+        border: 1px solid var(--header-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px 22px;
+      }
 
-    body {
-      font-family: Nunito, "SF Pro Text", "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+      .epub-card-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin: 0 0 14px;
+      }
 
-    /* ── nav ── */
-    header {
-      padding: 18px 32px 0;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-    }
-    nav { display: flex; gap: 4px; }
-    nav a {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-2);
-      text-decoration: none;
-      padding: 6px 14px;
-      border-radius: 999px;
-      transition: background 0.15s, color 0.15s;
-    }
-    nav a:hover { background: var(--border); color: var(--text); }
-    nav a.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); border: 1px solid var(--border); }
+      /* steps list */
+      .steps { list-style: none; padding: 0; margin: 0; }
+      .steps li {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 10px;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+      .steps li:last-child { margin-bottom: 0; }
+      .steps li::before {
+        counter-increment: steps;
+        content: counter(steps);
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--blue-1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .steps { counter-reset: steps; }
 
-    /* ── page heading ── */
-    .page-head {
-      padding: 32px 32px 0;
-    }
-    .page-head .eyebrow {
-      font-size: 13px;
-      color: var(--text-2);
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      margin-bottom: 6px;
-    }
-    .page-head h1 {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-    .page-head p {
-      margin-top: 6px;
-      font-size: 14px;
-      color: var(--text-2);
-    }
+      /* form fields */
+      .epub-field { margin-bottom: 12px; }
+      .epub-field:last-child { margin-bottom: 0; }
+      .epub-label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+      .epub-input {
+        width: 100%;
+        height: 42px;
+        padding: 0 13px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-input);
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+      }
+      .epub-input:focus {
+        border-color: var(--blue-2);
+        box-shadow: 0 0 0 3px var(--focus-outline);
+      }
+      .epub-input::placeholder { color: var(--border); }
 
-    /* ── main layout ── */
-    main {
-      padding: 28px 32px 64px;
-      max-width: 780px;
-    }
+      .epub-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
 
-    /* ── card ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 24px;
-      margin-bottom: 16px;
-    }
-    .card-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-2);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 16px;
-    }
+      .epub-hint {
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-top: 3px;
+        opacity: 0.8;
+      }
 
-    /* ── form fields ── */
-    .field { margin-bottom: 14px; }
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-2);
-      margin-bottom: 6px;
-    }
-    input[type="text"], input[type="number"], input[type="url"] {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      font-family: inherit;
-      font-size: 14px;
-      color: var(--text);
-      background: var(--bg);
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(123,184,245,0.15);
-    }
-    input::placeholder { color: #c0cad4; }
+      /* series info */
+      #series-info {
+        display: none;
+        background: var(--chip-active-bg);
+        border: 1px solid var(--chip-active-border);
+        border-radius: 12px;
+        padding: 10px 14px;
+        margin-top: 12px;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+      #series-info.visible { display: block; }
 
-    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+      /* button row */
+      .epub-btn-row { display: flex; gap: 10px; margin-top: 14px; }
 
-    /* ── hint text ── */
-    .hint {
-      font-size: 12px;
-      color: var(--text-2);
-      margin-top: 4px;
-    }
+      .epub-btn-primary {
+        height: 36px;
+        padding: 0 16px;
+        border: 1px solid var(--blue-3);
+        border-radius: var(--radius-button);
+        background: var(--blue-1);
+        color: #fff;
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--button-shadow);
+        transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+      }
+      .epub-btn-primary:hover {
+        background: var(--blue-2);
+        box-shadow: var(--button-hover-shadow);
+        transform: scale(1.02);
+      }
+      .epub-btn-primary:disabled,
+      .add-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
 
-    /* ── series info banner ── */
-    #series-info {
-      display: none;
-      background: #eef7ff;
-      border: 1px solid #c8e0f8;
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-top: 14px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent-dark);
-    }
-    #series-info.visible { display: block; }
+      /* progress */
+      #progress-wrap { display: none; margin-top: 14px; }
+      #progress-wrap.visible { display: block; }
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+      .progress-bar-bg {
+        height: 5px;
+        background: var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        background: var(--blue-1);
+        border-radius: 999px;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
 
-    /* ── buttons ── */
-    .btn-row { display: flex; gap: 10px; margin-top: 6px; }
-    button {
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      border: none;
-      border-radius: 999px;
-      padding: 10px 22px;
-      transition: all 0.15s;
-    }
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text-2);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-    }
-    .btn-secondary:hover { background: var(--bg); color: var(--text); }
-    .btn-primary {
-      background: var(--accent-dark);
-      color: #fff;
-      box-shadow: 0 2px 12px rgba(74,157,232,0.25);
-    }
-    .btn-primary:hover { background: #3a8dd8; box-shadow: 0 4px 16px rgba(74,157,232,0.35); transform: translateY(-1px); }
-    .btn-primary:disabled, .btn-secondary:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      transform: none;
-    }
+      /* status */
+      #status {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-top: 8px;
+        min-height: 16px;
+        font-weight: 500;
+      }
+      #status.success { color: #3aaa6e; }
+      #status.error { color: #e05555; }
 
-    /* ── progress ── */
-    #progress-wrap {
-      display: none;
-      margin-top: 16px;
-    }
-    #progress-wrap.visible { display: block; }
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-2);
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .progress-bar-bg {
-      height: 6px;
-      background: var(--border);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: var(--accent-dark);
-      border-radius: 999px;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
+      /* log */
+      #log {
+        display: none;
+        margin-top: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 8px 13px;
+        font-size: 0.76rem;
+        color: var(--muted);
+        line-height: 1.8;
+        font-weight: 500;
+      }
+      #log.visible { display: block; }
+      #log .log-ok { color: #3aaa6e; }
+      #log .log-err { color: #e05555; }
+      #log .log-info { color: var(--blue-1); }
 
-    /* ── status ── */
-    #status {
-      font-size: 13px;
-      color: var(--text-2);
-      margin-top: 10px;
-      min-height: 18px;
-      font-weight: 500;
-    }
-    #status.success { color: #3aaa6e; }
-    #status.error { color: #e05555; }
+      /* setup code */
+      .epub-pre {
+        margin-top: 10px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 0.82rem;
+        color: var(--blue-1);
+        overflow-x: auto;
+      }
+      .epub-code {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-size: 0.78rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="top-main">
+          <div>
+            <nav class="page-nav" aria-label="Site pages">
+              <a class="chip page-link" href="manhwa.html">reads</a>
+              <a class="chip page-link" href="faves.html">faves</a>
+              <a class="chip page-link is-active" href="epub.html">epub</a>
+            </nav>
+            <p class="subtitle">download readhive novels as .epub files</p>
+            <h1>epub downloader ✦</h1>
+            <p class="reorder-hint">paste a readhive url · set chapter range · save to desktop</p>
+          </div>
+        </div>
+      </header>
 
-    /* ── how-to card ── */
-    .steps { list-style: none; counter-reset: steps; }
-    .steps li {
-      counter-increment: steps;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      margin-bottom: 12px;
-      font-size: 14px;
-      color: var(--text-2);
-      font-weight: 500;
-    }
-    .steps li::before {
-      content: counter(steps);
-      flex-shrink: 0;
-      width: 24px;
-      height: 24px;
-      border-radius: 999px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--accent-dark);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+      <section class="epub-section">
 
-    /* ── log ── */
-    #log {
-      display: none;
-      margin-top: 12px;
-      max-height: 160px;
-      overflow-y: auto;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 12px;
-      color: var(--text-2);
-      line-height: 1.8;
-      font-weight: 500;
-    }
-    #log.visible { display: block; }
-    #log .log-ok { color: #3aaa6e; }
-    #log .log-err { color: #e05555; }
-    #log .log-info { color: var(--accent-dark); }
-  </style>
-</head>
-<body>
+        <!-- HOW IT WORKS -->
+        <div class="epub-card">
+          <p class="epub-card-title">how it works</p>
+          <ol class="steps">
+            <li>open a novel on readhive.org and copy the URL from your browser</li>
+            <li>paste it below and click <strong>fetch info</strong> to load the novel details</li>
+            <li>set your chapter range, then click <strong>download epub</strong></li>
+            <li>the Python server runs locally and saves the .epub to your Desktop</li>
+            <li>AirDrop it to your iPhone — it'll open straight in Books ♡</li>
+          </ol>
+        </div>
 
-<header>
-  <nav>
-    <a href="manhwa.html">reads</a>
-    <a href="faves.html">faves</a>
-    <a href="epub.html" class="active">epub</a>
-  </nav>
-</header>
+        <!-- NOVEL DETAILS -->
+        <div class="epub-card">
+          <p class="epub-card-title">novel details</p>
+          <div class="epub-field">
+            <label class="epub-label" for="url">readhive url</label>
+            <input class="epub-input" type="url" id="url" placeholder="https://readhive.org/series/12345/" />
+          </div>
+          <div id="series-info"></div>
+          <div class="epub-btn-row">
+            <button class="add-btn" id="fetch-btn" onclick="fetchInfo()">🔍 fetch info</button>
+          </div>
+        </div>
 
-<div class="page-head">
-  <div class="eyebrow">tools</div>
-  <h1>epub downloader ✦</h1>
-  <p>download readhive novels as .epub files for offline reading</p>
-</div>
+        <!-- DOWNLOAD OPTIONS -->
+        <div class="epub-card" id="download-card" style="display:none;">
+          <p class="epub-card-title">download options</p>
+          <div class="epub-row-3">
+            <div class="epub-field">
+              <label class="epub-label" for="from-ch">from chapter</label>
+              <input class="epub-input" type="number" id="from-ch" value="1" min="1" />
+            </div>
+            <div class="epub-field">
+              <label class="epub-label" for="to-ch">to chapter</label>
+              <input class="epub-input" type="number" id="to-ch" min="1" />
+              <p class="epub-hint">leave blank for all</p>
+            </div>
+            <div class="epub-field">
+              <label class="epub-label" for="delay">delay (seconds)</label>
+              <input class="epub-input" type="number" id="delay" value="1.0" min="0.1" max="5" step="0.1" />
+              <p class="epub-hint">0.3–1.0 recommended</p>
+            </div>
+          </div>
+          <div class="epub-btn-row">
+            <button class="epub-btn-primary" id="dl-btn" onclick="startDownload()">📥 download epub</button>
+          </div>
+          <div id="progress-wrap">
+            <div class="progress-label">
+              <span id="progress-text">downloading…</span>
+              <span id="progress-pct">0%</span>
+            </div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+          </div>
+          <div id="status"></div>
+          <div id="log"></div>
+        </div>
 
-<main>
+        <!-- FIRST TIME SETUP -->
+        <div class="epub-card">
+          <p class="epub-card-title">first time setup</p>
+          <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;">
+            make sure you've run
+            <code class="epub-code">pip3 install -r NOVEL-TO-EPUB/requirements.txt</code>
+            once, then start the local server with:
+          </p>
+          <pre class="epub-pre">python3 NOVEL-TO-EPUB/readhive_server.py</pre>
+          <p style="font-size:0.82rem; color:var(--muted); margin-top:10px;">keep that Terminal window open while using this page.</p>
+        </div>
 
-  <!-- HOW TO USE -->
-  <div class="card">
-    <div class="card-title">how it works</div>
-    <ol class="steps">
-      <li>open a novel on readhive.org and copy the URL from your browser</li>
-      <li>paste it below and click <strong>fetch info</strong> to load the novel details</li>
-      <li>set your chapter range, then click <strong>download epub</strong></li>
-      <li>a Python script will run locally and save the .epub to your Desktop</li>
-      <li>AirDrop it to your iPhone — it'll open straight in Books ♡</li>
-    </ol>
-  </div>
+      </section>
+    </main>
 
-  <!-- MAIN TOOL -->
-  <div class="card">
-    <div class="card-title">novel details</div>
+    <script>
+      let seriesId = null;
+      let totalChapters = 0;
+      let seriesTitle = '';
+      let downloading = false;
 
-    <div class="field">
-      <label>readhive url</label>
-      <input type="url" id="url" placeholder="https://readhive.org/series/12345/" />
-    </div>
+      const SERVER = 'http://localhost:7842';
 
-    <div id="series-info"></div>
+      function setStatus(msg, type = '') {
+        const el = document.getElementById('status');
+        el.textContent = msg;
+        el.className = type;
+      }
 
-    <div class="btn-row" style="margin-top:14px;">
-      <button class="btn-secondary" id="fetch-btn" onclick="fetchInfo()">🔍 fetch info</button>
-    </div>
-  </div>
+      function log(msg, type = '') {
+        const el = document.getElementById('log');
+        el.classList.add('visible');
+        const line = document.createElement('div');
+        line.className = type ? `log-${type}` : '';
+        line.textContent = msg;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+      }
 
-  <div class="card" id="download-card" style="display:none;">
-    <div class="card-title">download options</div>
+      function setProgress(current, total) {
+        const pct = Math.round((current / total) * 100);
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('progress-pct').textContent = pct + '%';
+        document.getElementById('progress-text').textContent = `chapter ${current} of ${total}`;
+      }
 
-    <div class="row-3">
-      <div class="field">
-        <label>from chapter</label>
-        <input type="number" id="from-ch" value="1" min="1" />
-      </div>
-      <div class="field">
-        <label>to chapter</label>
-        <input type="number" id="to-ch" min="1" />
-        <div class="hint">leave blank for all</div>
-      </div>
-      <div class="field">
-        <label>delay (seconds)</label>
-        <input type="number" id="delay" value="1.0" min="0.1" max="5" step="0.1" />
-        <div class="hint">0.3–1.0 recommended</div>
-      </div>
-    </div>
+      async function fetchInfo() {
+        const url = document.getElementById('url').value.trim();
+        if (!url) { setStatus('please enter a readhive url', 'error'); return; }
 
-    <div class="btn-row">
-      <button class="btn-primary" id="dl-btn" onclick="startDownload()">📥 download epub</button>
-    </div>
+        const fetchBtn = document.getElementById('fetch-btn');
+        fetchBtn.disabled = true;
+        fetchBtn.textContent = '⏳ fetching…';
+        setStatus('connecting to local server…');
+        document.getElementById('series-info').classList.remove('visible');
 
-    <div id="progress-wrap">
-      <div class="progress-label">
-        <span id="progress-text">downloading…</span>
-        <span id="progress-pct">0%</span>
-      </div>
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
-    </div>
+        try {
+          const res = await fetch(`${SERVER}/fetch-info`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          });
+          if (!res.ok) throw new Error(await res.text());
+          const data = await res.json();
 
-    <div id="status"></div>
-    <div id="log"></div>
-  </div>
+          seriesId = data.series_id;
+          totalChapters = data.total_chapters;
+          seriesTitle = data.title;
 
-  <!-- SETUP REMINDER -->
-  <div class="card" id="setup-card">
-    <div class="card-title">first time setup</div>
-    <p style="font-size:14px; color:var(--text-2); line-height:1.7;">
-      this tool works alongside the Python script. make sure you've run
-      <code style="background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:1px 6px; font-size:12px;">pip3 install -r NOVEL-TO-EPUB/requirements.txt</code>
-      once, then start the local server with:
-    </p>
-    <pre style="margin-top:10px; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 16px; font-size:13px; color:var(--accent-dark); overflow-x:auto;">python3 NOVEL-TO-EPUB/readhive_server.py</pre>
-    <p style="font-size:13px; color:var(--text-2); margin-top:10px;">keep that Terminal window open while using this page.</p>
-  </div>
+          const info = document.getElementById('series-info');
+          info.textContent = `📖 ${data.title}${data.author ? ' · by ' + data.author : ''} · ${data.total_chapters} chapters`;
+          info.classList.add('visible');
 
-</main>
-
-<script>
-  // ── state ──
-  let seriesId = null;
-  let totalChapters = 0;
-  let seriesTitle = '';
-  let downloading = false;
-
-  const SERVER = 'http://localhost:7842';
-
-  function setStatus(msg, type = '') {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = type;
-  }
-
-  function log(msg, type = '') {
-    const el = document.getElementById('log');
-    el.classList.add('visible');
-    const line = document.createElement('div');
-    line.className = type ? `log-${type}` : '';
-    line.textContent = msg;
-    el.appendChild(line);
-    el.scrollTop = el.scrollHeight;
-  }
-
-  function setProgress(current, total) {
-    const pct = Math.round((current / total) * 100);
-    document.getElementById('progress-fill').style.width = pct + '%';
-    document.getElementById('progress-pct').textContent = pct + '%';
-    document.getElementById('progress-text').textContent = `chapter ${current} of ${total}`;
-  }
-
-  async function fetchInfo() {
-    const url = document.getElementById('url').value.trim();
-    if (!url) { setStatus('please enter a readhive url', 'error'); return; }
-
-    const fetchBtn = document.getElementById('fetch-btn');
-    fetchBtn.disabled = true;
-    fetchBtn.textContent = '⏳ fetching…';
-    setStatus('connecting to local server…');
-    document.getElementById('series-info').classList.remove('visible');
-
-    try {
-      const res = await fetch(`${SERVER}/fetch-info`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-
-      seriesId = data.series_id;
-      totalChapters = data.total_chapters;
-      seriesTitle = data.title;
-
-      const info = document.getElementById('series-info');
-      info.textContent = `📖 ${data.title}${data.author ? ' · by ' + data.author : ''} · ${data.total_chapters} chapters`;
-      info.classList.add('visible');
-
-      document.getElementById('to-ch').value = data.total_chapters;
-      document.getElementById('download-card').style.display = 'block';
-      setStatus('ready to download ♡', 'success');
-    } catch (e) {
-      setStatus('could not connect — is the local server running? (python3 readhive_server.py)', 'error');
-    } finally {
-      fetchBtn.disabled = false;
-      fetchBtn.textContent = '🔍 fetch info';
-    }
-  }
-
-  async function startDownload() {
-    if (!seriesId || downloading) return;
-    const fromCh = parseInt(document.getElementById('from-ch').value) || 1;
-    const toCh = parseInt(document.getElementById('to-ch').value) || totalChapters;
-    const delay = parseFloat(document.getElementById('delay').value) || 1.0;
-
-    if (fromCh > toCh) { setStatus('from chapter must be ≤ to chapter', 'error'); return; }
-
-    downloading = true;
-    document.getElementById('dl-btn').disabled = true;
-    document.getElementById('fetch-btn').disabled = true;
-
-    const logEl = document.getElementById('log');
-    logEl.innerHTML = '';
-    logEl.classList.add('visible');
-
-    const progressWrap = document.getElementById('progress-wrap');
-    progressWrap.classList.add('visible');
-    setProgress(0, toCh - fromCh + 1);
-    setStatus('starting download…');
-
-    try {
-      const res = await fetch(`${SERVER}/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ series_id: seriesId, from_ch: fromCh, to_ch: toCh, delay, title: seriesTitle })
-      });
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let done = false;
-
-      while (!done) {
-        const { value, done: streamDone } = await reader.read();
-        done = streamDone;
-        if (value) buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const msg = JSON.parse(line);
-            if (msg.type === 'progress') {
-              setProgress(msg.current, msg.total);
-              log(`✓ ${msg.chapter_title}`, 'ok');
-            } else if (msg.type === 'skip') {
-              log(`✗ chapter ${msg.chapter} failed — skipped`, 'err');
-            } else if (msg.type === 'done') {
-              setStatus(`✓ saved to ${msg.path}`, 'success');
-              log(`📚 epub saved: ${msg.path}`, 'info');
-            } else if (msg.type === 'error') {
-              setStatus(msg.message, 'error');
-            }
-          } catch {}
+          document.getElementById('to-ch').value = data.total_chapters;
+          document.getElementById('download-card').style.display = 'block';
+          setStatus('ready to download ♡', 'success');
+        } catch (e) {
+          setStatus('could not connect — is the local server running? (python3 NOVEL-TO-EPUB/readhive_server.py)', 'error');
+        } finally {
+          fetchBtn.disabled = false;
+          fetchBtn.textContent = '🔍 fetch info';
         }
       }
-    } catch (e) {
-      setStatus('download failed — check the terminal for errors', 'error');
-    } finally {
-      downloading = false;
-      document.getElementById('dl-btn').disabled = false;
-      document.getElementById('fetch-btn').disabled = false;
-    }
-  }
-</script>
-</body>
+
+      async function startDownload() {
+        if (!seriesId || downloading) return;
+        const fromCh = parseInt(document.getElementById('from-ch').value) || 1;
+        const toCh = parseInt(document.getElementById('to-ch').value) || totalChapters;
+        const delay = parseFloat(document.getElementById('delay').value) || 1.0;
+
+        if (fromCh > toCh) { setStatus('from chapter must be ≤ to chapter', 'error'); return; }
+
+        downloading = true;
+        document.getElementById('dl-btn').disabled = true;
+        document.getElementById('fetch-btn').disabled = true;
+
+        const logEl = document.getElementById('log');
+        logEl.innerHTML = '';
+        logEl.classList.add('visible');
+
+        const progressWrap = document.getElementById('progress-wrap');
+        progressWrap.classList.add('visible');
+        setProgress(0, toCh - fromCh + 1);
+        setStatus('starting download…');
+
+        try {
+          const res = await fetch(`${SERVER}/download`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ series_id: seriesId, from_ch: fromCh, to_ch: toCh, delay, title: seriesTitle })
+          });
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let done = false;
+
+          while (!done) {
+            const { value, done: streamDone } = await reader.read();
+            done = streamDone;
+            if (value) buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const msg = JSON.parse(line);
+                if (msg.type === 'progress') {
+                  setProgress(msg.current, msg.total);
+                  log(`✓ ${msg.chapter_title}`, 'ok');
+                } else if (msg.type === 'skip') {
+                  log(`✗ chapter ${msg.chapter} failed — skipped`, 'err');
+                } else if (msg.type === 'done') {
+                  setStatus(`✓ saved to ${msg.path}`, 'success');
+                  log(`📚 epub saved: ${msg.path}`, 'info');
+                } else if (msg.type === 'error') {
+                  setStatus(msg.message, 'error');
+                }
+              } catch {}
+            }
+          }
+        } catch (e) {
+          setStatus('download failed — check the terminal for errors', 'error');
+        } finally {
+          downloading = false;
+          document.getElementById('dl-btn').disabled = false;
+          document.getElementById('fetch-btn').disabled = false;
+        }
+      }
+    </script>
+  </body>
 </html>
