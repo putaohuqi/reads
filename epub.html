@@ -25,20 +25,38 @@
         gap: 18px;
         align-items: start;
       }
-      .epub-col-left { display: grid; gap: 14px; min-width: 0; }
-      .epub-col-right {
-        display: grid;
-        gap: 14px;
+      .epub-col-left,
+      .epub-col-right { display: contents; }
+      .epub-card-how { grid-column: 1; grid-row: 1; }
+      .epub-card-details { grid-column: 1; grid-row: 2; }
+      #download-card { grid-column: 1; grid-row: 3; }
+      .epub-card-setup { grid-column: 1; grid-row: 4; }
+      #history-card {
+        grid-column: 2;
+        grid-row: 1;
         position: sticky;
         top: 20px;
-        min-width: 0;
-        width: 100%;
         align-self: start;
+        max-height: min(280px, calc(100vh - 40px));
+        display: flex;
+        flex-direction: column;
       }
       @media (max-width: 900px) {
         .epub-grid { grid-template-columns: 1fr; }
         .epub-card { backdrop-filter: none; }
-        .epub-col-right { position: static; }
+        .epub-card-how,
+        .epub-card-details,
+        #download-card,
+        .epub-card-setup,
+        #history-card {
+          grid-column: 1;
+          grid-row: auto;
+        }
+        #history-card {
+          position: static;
+          max-height: none;
+          display: block;
+        }
         .epub-row-2,
         .epub-row-3 { grid-template-columns: 1fr; }
         .epub-btn-row {
@@ -497,8 +515,11 @@
         overflow: hidden;
       }
       #history-list {
+        flex: 1 1 auto;
+        min-height: 0;
         min-width: 0;
         width: 100%;
+        overflow: auto;
       }
 
       @media (max-width: 980px) {
