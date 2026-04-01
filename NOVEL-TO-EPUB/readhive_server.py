@@ -342,6 +342,32 @@ def route_fetch_info():
             "description": desc, "total_chapters": total, "cover_url": cover_url}
 
 
+@app.get("/cover-preview")
+def route_cover_preview():
+    raw_url = request.args.get("url", "").strip()
+    if not raw_url:
+        return "missing url", 400
+
+    resolved_url = absolute_url(raw_url)
+    try:
+        response = requests.get(resolved_url, headers=HEADERS, timeout=20)
+        response.raise_for_status()
+    except Exception as e:
+        return str(e), 502
+
+    content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
+    if not content_type:
+        guessed_type, _ = mimetypes.guess_type(resolved_url)
+        content_type = guessed_type or "image/jpeg"
+
+    if not content_type.startswith("image/"):
+        return "cover preview is not an image", 415
+
+    preview = Response(response.content, mimetype=content_type)
+    preview.headers["Cache-Control"] = "public, max-age=3600"
+    return preview
+
+
 @app.post("/download")
 def route_download():
     data = request.get_json(force=True) or {}

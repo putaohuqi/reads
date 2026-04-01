@@ -21,16 +21,18 @@
       .epub-grid {
         margin-top: 24px;
         display: grid;
-        grid-template-columns: 3fr 2fr;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
         gap: 18px;
         align-items: start;
       }
-      .epub-col-left { display: grid; gap: 14px; }
+      .epub-col-left { display: grid; gap: 14px; min-width: 0; }
       .epub-col-right {
         display: grid;
         gap: 14px;
         position: sticky;
         top: 20px;
+        min-width: 0;
+        width: 100%;
       }
       @media (max-width: 640px) {
         .epub-grid { grid-template-columns: 1fr; }
@@ -373,18 +375,30 @@
         gap: 3px;
         margin-bottom: 10px;
         min-width: 0;
+        width: 100%;
       }
       .history-title {
         font-size: 0.92rem;
         font-weight: 700;
         color: var(--text);
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .history-meta {
         font-size: 0.78rem;
         color: var(--muted);
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .history-path {
         display: block;
+        width: 100%;
         max-width: 100%;
         font-size: 0.7rem;
         color: var(--muted);
@@ -432,6 +446,10 @@
 
       #history-card {
         overflow: hidden;
+      }
+      #history-list {
+        min-width: 0;
+        width: 100%;
       }
 
       @media (max-width: 980px) {
@@ -735,12 +753,16 @@
           return;
         }
 
-        img.src = url;
+        const proxiedUrl = `${SERVER}/cover-preview?url=${encodeURIComponent(url)}&ts=${Date.now()}`;
+        img.src = proxiedUrl;
         img.style.display = 'block';
         wrap.classList.add('visible');
         img.onerror = () => {
           img.removeAttribute('src');
           img.style.display = 'none';
+          authorEl.textContent = currentAuthor
+            ? `by ${currentAuthor} · cover preview unavailable`
+            : 'author not set · cover preview unavailable';
         };
       }
 
@@ -771,8 +793,12 @@
         catch { return []; }
       }
 
+      function getVisibleHistoryItems(items) {
+        return sanitizeHistoryItems(items).filter((item) => !normalizeDeleted(item._deleted));
+      }
+
       function persistHistory(history) {
-        const nextHistory = sanitizeHistoryItems(history).slice(0, 30);
+        const nextHistory = sanitizeHistoryItems(history).slice(0, 60);
         localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
 
         const cloud = window.WishlistCloud;
@@ -794,6 +820,7 @@
         if (idx >= 0) history.splice(idx, 1);
         history.unshift({
           ...entry,
+          _deleted: false,
           _updatedAt: Date.now(),
         });
         persistHistory(history);
@@ -803,7 +830,7 @@
         const history = loadHistory();
         const idx = history.findIndex(h => h.id === id);
         if (idx >= 0) {
-          Object.assign(history[idx], changes, { _updatedAt: Date.now() });
+          Object.assign(history[idx], changes, { _deleted: false, _updatedAt: Date.now() });
           persistHistory(history);
           return;
         }
@@ -811,12 +838,20 @@
       }
 
       function removeHistory(id) {
-        const history = loadHistory().filter(h => h.id !== id);
+        const now = Date.now();
+        const history = loadHistory().map((item) => {
+          if (item.id !== id) return item;
+          return {
+            ...item,
+            _deleted: true,
+            _updatedAt: now,
+          };
+        });
         persistHistory(history);
       }
 
       function renderHistory() {
-        const history = loadHistory();
+        const history = getVisibleHistoryItems(loadHistory()).slice(0, 30);
         const list = document.getElementById('history-list');
         const empty = document.getElementById('history-empty');
         list.innerHTML = '';
@@ -853,8 +888,13 @@
               to_ch: Number.isFinite(Number(item.to_ch)) ? Number(item.to_ch) : 1,
               date: item.date || new Date(now).toISOString(),
               _updatedAt: normalizeTimestamp(item._updatedAt || item.updatedAt || item.date, now),
+              _deleted: normalizeDeleted(item._deleted ?? item.deleted),
             };
           });
+      }
+
+      function normalizeDeleted(value) {
+        return value === true || value === 'true' || value === 1 || value === '1';
       }
 
       function normalizeTimestamp(value, fallback) {
