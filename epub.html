@@ -25,31 +25,20 @@
         gap: 18px;
         align-items: start;
       }
-      .epub-col-left,
-      .epub-col-right { display: contents; }
-      .epub-card-how { grid-column: 1; grid-row: 1; }
-      .epub-card-details { grid-column: 1; grid-row: 2; }
-      #download-card { grid-column: 1; grid-row: 3; }
-      .epub-card-setup { grid-column: 1; grid-row: 4; }
-      #history-card {
-        grid-column: 2;
-        grid-row: 1;
+      .epub-col-left { display: grid; gap: 14px; min-width: 0; }
+      .epub-col-right {
+        display: grid;
+        gap: 14px;
         position: sticky;
         top: 20px;
+        min-width: 0;
+        width: 100%;
         align-self: start;
       }
       @media (max-width: 640px) {
         .epub-grid { grid-template-columns: 1fr; }
         .epub-card { backdrop-filter: none; }
-        .epub-card-how,
-        .epub-card-details,
-        #download-card,
-        .epub-card-setup,
-        #history-card {
-          grid-column: 1;
-          grid-row: auto;
-        }
-        #history-card { position: static; }
+        .epub-col-right { position: static; }
       }
 
       .epub-card {
