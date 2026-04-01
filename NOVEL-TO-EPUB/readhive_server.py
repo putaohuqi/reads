@@ -161,6 +161,16 @@ def sanitize_chapter_html(content_el: BeautifulSoup) -> str:
         if el.name == "img" and el.get("src"):
             el["src"] = absolute_url(el["src"])
 
+    empty_run = 0
+    for el in list(content_el.find_all(["p", "div", "span"])):
+        text = el.get_text(" ", strip=True).replace("\xa0", "").strip()
+        if el.name == "p" and not el.find("img") and not text:
+            empty_run += 1
+            if empty_run > 1:
+                el.decompose()
+            continue
+        empty_run = 0
+
     for el in list(content_el.find_all(["div", "span"])):
         if el.find("img"):
             continue

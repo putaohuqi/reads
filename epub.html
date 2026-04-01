@@ -193,7 +193,12 @@
       }
 
       /* ── button row ── */
-      .epub-btn-row { display: flex; gap: 10px; margin-top: 14px; }
+      .epub-btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 14px;
+        align-items: center;
+      }
 
       .epub-btn-primary {
         height: 36px;
@@ -228,6 +233,9 @@
         border-radius: var(--radius-button);
         background: #fff4f4;
         color: #b94a4a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font: inherit;
         font-size: 0.9rem;
         font-weight: 700;
@@ -356,6 +364,7 @@
         flex-direction: column;
         gap: 3px;
         margin-bottom: 10px;
+        min-width: 0;
       }
       .history-title {
         font-size: 0.92rem;
@@ -367,6 +376,8 @@
         color: var(--muted);
       }
       .history-path {
+        display: block;
+        max-width: 100%;
         font-size: 0.7rem;
         color: var(--muted);
         opacity: 0.65;
