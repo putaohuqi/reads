@@ -28,9 +28,10 @@
       .epub-col-left,
       .epub-col-right { display: contents; }
       .epub-card-how { grid-column: 1; grid-row: 1; }
-      .epub-card-details { grid-column: 1; grid-row: 2; }
-      #download-card { grid-column: 1; grid-row: 3; }
-      .epub-card-setup { grid-column: 1; grid-row: 4; }
+      .epub-card-search { grid-column: 1; grid-row: 2; }
+      .epub-card-details { grid-column: 1; grid-row: 3; }
+      #download-card { grid-column: 1; grid-row: 4; }
+      .epub-card-setup { grid-column: 1; grid-row: 5; }
       #history-card {
         grid-column: 2;
         grid-row: 1;
@@ -45,6 +46,7 @@
         .epub-grid { grid-template-columns: 1fr; }
         .epub-card { backdrop-filter: none; }
         .epub-card-how,
+        .epub-card-search,
         .epub-card-details,
         #download-card,
         .epub-card-setup,
@@ -171,12 +173,18 @@
         }
         .epub-btn-row > button,
         .history-main-actions > button,
-        .history-remove-btn {
+        .history-remove-btn,
+        .source-result-actions > button {
           width: 100%;
         }
         .history-main-actions {
           display: grid;
           grid-template-columns: 1fr;
+        }
+        .source-thumb {
+          width: min(120px, 100%);
+          height: auto;
+          aspect-ratio: 52 / 72;
         }
         .epub-pre-wrap {
           display: grid;
@@ -201,6 +209,94 @@
         color: var(--muted);
         margin-top: 3px;
         opacity: 0.8;
+      }
+
+      /* ── source finder ── */
+      .source-results {
+        display: none;
+        margin-top: 14px;
+        gap: 10px;
+      }
+      .source-results.visible { display: grid; }
+      .source-result {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--bg);
+      }
+      .source-result-head {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        min-width: 0;
+      }
+      .source-thumb {
+        width: 52px;
+        height: 72px;
+        object-fit: cover;
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        flex-shrink: 0;
+      }
+      .source-result-copy {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+      .source-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: var(--chip-active-bg);
+        border: 1px solid var(--chip-active-border);
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--blue-1);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .source-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .source-note {
+        margin: 0;
+        font-size: 0.79rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .source-result-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .source-link-btn {
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--text);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .source-link-btn:hover {
+        background: var(--chip-active-bg);
+        border-color: var(--chip-active-border);
+      }
+      .source-empty {
+        margin: 0;
+        font-size: 0.82rem;
+        color: var(--muted);
       }
 
       /* ── series info ── */
@@ -564,9 +660,9 @@
               <a class="chip page-link" href="faves.html">faves</a>
               <a class="chip page-link is-active" href="epub.html">epub</a>
             </nav>
-            <p class="subtitle">download readhive novels as .epub files</p>
+            <p class="subtitle">search readhive, browse webnovel, and turn supported links into .epub files</p>
             <h1>epub downloader ✦</h1>
-            <p class="reorder-hint">paste a readhive url · set chapter range · save to desktop</p>
+            <p class="reorder-hint">search a title · paste a source url · set chapter range · save to desktop</p>
           </div>
           <div class="top-actions">
             <div class="auth-inline">
@@ -589,27 +685,43 @@
           <div class="epub-card epub-card-how">
             <p class="epub-card-title">how it works</p>
             <ol class="steps">
-              <li>open a novel on readhive.org and copy the URL from your browser</li>
-              <li>paste it below and click fetch info to load the novel details</li>
+              <li>search a title below to check ReadHive first and open discovery links for Webnovel or Novel Updates</li>
+              <li>paste a supported source url and click fetch info to load the novel details</li>
               <li>set your chapter range, then click download epub</li>
               <li>the Python server runs locally and saves the .epub to your Desktop</li>
-              <li>AirDrop it to your iPhone — it'll open straight in Books ♡</li>
+              <li>if a translator site is unsupported, the page will tell you it cannot generate an epub yet</li>
             </ol>
+          </div>
+
+          <!-- FIND A NOVEL -->
+          <div class="epub-card epub-card-search">
+            <p class="epub-card-title">find a novel</p>
+            <div class="epub-field">
+              <label class="epub-label" for="search-title">search by title</label>
+              <input class="epub-input" type="text" id="search-title" placeholder="shadow slave" />
+              <p class="epub-hint">ReadHive matches can auto-fill below. Webnovel and Novel Updates open in a new tab for discovery.</p>
+            </div>
+            <div class="epub-btn-row">
+              <button class="add-btn" id="search-btn" onclick="searchSources()">show matches</button>
+            </div>
+            <div id="search-status" class="epub-status"></div>
+            <div id="search-results" class="source-results"></div>
           </div>
 
           <!-- NOVEL DETAILS -->
           <div class="epub-card epub-card-details">
             <p class="epub-card-title">novel details</p>
             <div class="epub-field">
-              <label class="epub-label" for="url">readhive url</label>
+              <label class="epub-label" for="url">novel or translator url</label>
               <input class="epub-input" type="url" id="url" placeholder="https://readhive.org/series/12345/" />
+              <p class="epub-hint">ReadHive works directly right now. Other sites will show a clear unsupported message if they cannot generate an epub yet.</p>
             </div>
             <div id="series-info"></div>
             <div id="metadata-fields" style="display:none; margin-top:12px;">
               <div class="epub-row-2">
                 <div class="epub-field">
                   <label class="epub-label" for="author">author</label>
-                  <input class="epub-input" type="text" id="author" placeholder="auto-filled from ReadHive" />
+                  <input class="epub-input" type="text" id="author" placeholder="auto-filled from the source" />
                 </div>
                 <div class="epub-field">
                   <label class="epub-label" for="cover-url">cover image url</label>
@@ -626,7 +738,7 @@
                   </div>
                 </div>
               </div>
-              <p class="epub-hint">you can edit these before downloading if ReadHive is missing or wrong</p>
+              <p class="epub-hint">you can edit these before downloading if the source metadata is missing or wrong</p>
             </div>
             <div class="epub-btn-row">
               <button class="add-btn" id="fetch-btn" onclick="fetchInfo()">fetch info</button>
@@ -677,9 +789,13 @@
               once, then start the local server with:
             </p>
             <div class="epub-pre-wrap">
-              <pre class="epub-pre" id="server-cmd">cd "/Users/hujiaqi/Downloads/PERSONAL SITES/READS" && python3 NOVEL-TO-EPUB/readhive_server.py</pre>
+              <pre class="epub-pre" id="server-cmd">cd "/path/to/your/READS" && python3 NOVEL-TO-EPUB/readhive_server.py</pre>
               <button class="copy-btn" onclick="copyCmd(this)">copy</button>
             </div>
+            <div class="epub-btn-row" id="private-server-controls" style="display:none; margin-top:10px;">
+              <button class="source-link-btn" id="edit-server-path-btn" type="button" onclick="editPrivateServerPath()">set private path</button>
+            </div>
+            <p id="server-cmd-note" style="font-size:0.82rem; color:var(--muted); margin-top:10px;">for safety, this page only shows a generic command unless the owner is signed in on this browser.</p>
             <p style="font-size:0.82rem; color:var(--muted); margin-top:10px;">keep that Terminal window open while using this page.</p>
           </div>
 
@@ -733,6 +849,12 @@
       const SERVER = 'http://localhost:7842';
       const HISTORY_KEY = 'readhive_history';
       const CLOUD_LIST_ID = 'epub-history';
+      const OWNER_EMAILS = ['hmaggie213@gmail.com'];
+      const PRIVATE_SERVER_DIR_KEY = 'epub_private_server_dir';
+      const GENERIC_SERVER_DIR = '/path/to/your/READS';
+      const SERVER_START_SUFFIX = 'python3 NOVEL-TO-EPUB/readhive_server.py';
+      const WEBNOVEL_SEARCH_BASE = 'https://www.webnovel.com/search?keywords=';
+      const NOVELUPDATES_SEARCH_BASE = 'https://www.novelupdates.com/series-finder/?sf=1&sh=';
 
       // ── generic helpers ──
       function escapeHtml(str) {
@@ -744,6 +866,93 @@
       function generateId() {
         if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+      }
+
+      function getCurrentUserEmail() {
+        const cloud = window.WishlistCloud;
+        const user = cloud && typeof cloud.getCurrentUser === 'function' ? cloud.getCurrentUser() : null;
+        return String(user?.email || '').trim().toLowerCase();
+      }
+
+      function isOwnerSignedIn() {
+        const email = getCurrentUserEmail();
+        return OWNER_EMAILS.includes(email);
+      }
+
+      function getPrivateServerDir() {
+        try {
+          return String(localStorage.getItem(PRIVATE_SERVER_DIR_KEY) || '').trim();
+        } catch {
+          return '';
+        }
+      }
+
+      function setPrivateServerDir(dir) {
+        try {
+          if (dir) localStorage.setItem(PRIVATE_SERVER_DIR_KEY, dir);
+          else localStorage.removeItem(PRIVATE_SERVER_DIR_KEY);
+        } catch {}
+      }
+
+      function getServerStartCommand() {
+        const privateDir = isOwnerSignedIn() ? getPrivateServerDir() : '';
+        const dir = privateDir || GENERIC_SERVER_DIR;
+        return `cd "${dir}" && ${SERVER_START_SUFFIX}`;
+      }
+
+      function getServerStartHelp() {
+        const command = getServerStartCommand();
+        if (isOwnerSignedIn() && getPrivateServerDir()) {
+          return `could not connect — start it with: ${command}`;
+        }
+        return `could not connect — start your local server first. Example: ${command}`;
+      }
+
+      function refreshServerCommandUi() {
+        const cmdEl = document.getElementById('server-cmd');
+        const noteEl = document.getElementById('server-cmd-note');
+        const controlsEl = document.getElementById('private-server-controls');
+        const editBtn = document.getElementById('edit-server-path-btn');
+        if (!cmdEl || !noteEl || !controlsEl || !editBtn) return;
+
+        cmdEl.textContent = getServerStartCommand();
+
+        if (isOwnerSignedIn()) {
+          controlsEl.style.display = 'flex';
+          const hasPrivateDir = Boolean(getPrivateServerDir());
+          editBtn.textContent = hasPrivateDir ? 'update private path' : 'set private path';
+          noteEl.textContent = hasPrivateDir
+            ? 'private path is saved only in this browser while you are signed into your account.'
+            : 'set your private local READS folder once on this browser to restore your personal copy-paste command.';
+          return;
+        }
+
+        controlsEl.style.display = 'none';
+        noteEl.textContent = 'for safety, this page only shows a generic command unless the owner is signed in on this browser.';
+      }
+
+      function editPrivateServerPath() {
+        if (!isOwnerSignedIn()) return;
+
+        const current = getPrivateServerDir();
+        const next = window.prompt(
+          'Enter your local READS folder path. Leave blank to clear the private path.',
+          current || '/Users/your-name/Downloads/PERSONAL SITES/READS'
+        );
+
+        if (next === null) return;
+
+        const cleaned = String(next).trim().replace(/\/+$/, '');
+        setPrivateServerDir(cleaned);
+        refreshServerCommandUi();
+      }
+
+      function buildWebnovelSearchUrl(query) {
+        return WEBNOVEL_SEARCH_BASE + encodeURIComponent(query);
+      }
+
+      function buildNovelUpdatesSearchUrl(query) {
+        return NOVELUPDATES_SEARCH_BASE + encodeURIComponent(query);
       }
 
       function setEl(el, msg, cls = '') {
@@ -845,6 +1054,175 @@
         seriesCoverUrl = '';
         seriesUrl = '';
         resetMainDownloadState();
+      }
+
+      async function useReadhiveMatch(url) {
+        document.getElementById('url').value = url;
+        await fetchInfo();
+      }
+
+      function openSourceLink(url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+
+      function buildSourceResult({ source, title, note, thumb = '', primaryLabel, primaryAction, secondaryLabel, secondaryAction }) {
+        const card = document.createElement('div');
+        card.className = 'source-result';
+
+        const head = document.createElement('div');
+        head.className = 'source-result-head';
+
+        if (thumb) {
+          const img = document.createElement('img');
+          img.className = 'source-thumb';
+          img.src = thumb;
+          img.alt = `${title} cover`;
+          head.appendChild(img);
+        }
+
+        const copy = document.createElement('div');
+        copy.className = 'source-result-copy';
+
+        const badge = document.createElement('span');
+        badge.className = 'source-badge';
+        badge.textContent = source;
+        copy.appendChild(badge);
+
+        const heading = document.createElement('p');
+        heading.className = 'source-title';
+        heading.textContent = title;
+        copy.appendChild(heading);
+
+        const noteEl = document.createElement('p');
+        noteEl.className = 'source-note';
+        noteEl.textContent = note;
+        copy.appendChild(noteEl);
+
+        head.appendChild(copy);
+        card.appendChild(head);
+
+        const actions = document.createElement('div');
+        actions.className = 'source-result-actions';
+
+        const primaryBtn = document.createElement('button');
+        primaryBtn.className = 'add-btn';
+        primaryBtn.type = 'button';
+        primaryBtn.textContent = primaryLabel;
+        primaryBtn.addEventListener('click', primaryAction);
+        actions.appendChild(primaryBtn);
+
+        if (secondaryLabel && secondaryAction) {
+          const secondaryBtn = document.createElement('button');
+          secondaryBtn.className = 'source-link-btn';
+          secondaryBtn.type = 'button';
+          secondaryBtn.textContent = secondaryLabel;
+          secondaryBtn.addEventListener('click', secondaryAction);
+          actions.appendChild(secondaryBtn);
+        }
+
+        card.appendChild(actions);
+        return card;
+      }
+
+      function renderSearchResults(data) {
+        const container = document.getElementById('search-results');
+        if (!container) return;
+
+        container.innerHTML = '';
+        const query = String(data?.query || '').trim();
+        const readhiveMatches = Array.isArray(data?.readhive_matches) ? data.readhive_matches : [];
+
+        if (readhiveMatches.length) {
+          readhiveMatches.forEach((match) => {
+            container.appendChild(buildSourceResult({
+              source: 'ReadHive',
+              title: match.title,
+              note: 'direct epub download is supported from this source',
+              thumb: match.thumb || '',
+              primaryLabel: 'use this',
+              primaryAction: () => useReadhiveMatch(match.url),
+              secondaryLabel: 'open',
+              secondaryAction: () => openSourceLink(match.url),
+            }));
+          });
+        } else {
+          const empty = document.createElement('p');
+          empty.className = 'source-empty';
+          empty.textContent = 'No ReadHive matches showed up for this title yet. Try the discovery links below.';
+          container.appendChild(empty);
+        }
+
+        if (query) {
+          container.appendChild(buildSourceResult({
+            source: 'Webnovel',
+            title: `Search Webnovel for "${query}"`,
+            note: 'discovery only for now — the downloader cannot generate epubs from Webnovel directly yet',
+            primaryLabel: 'open webnovel',
+            primaryAction: () => openSourceLink(buildWebnovelSearchUrl(query)),
+          }));
+
+          container.appendChild(buildSourceResult({
+            source: 'Novel Updates',
+            title: `Find translator sites for "${query}"`,
+            note: 'use Novel Updates to find translation groups, then paste the translator link back here to test support',
+            primaryLabel: 'open novel updates',
+            primaryAction: () => openSourceLink(buildNovelUpdatesSearchUrl(query)),
+          }));
+        }
+
+        container.classList.add('visible');
+      }
+
+      async function searchSources() {
+        const query = document.getElementById('search-title').value.trim();
+        const statusEl = document.getElementById('search-status');
+        const btn = document.getElementById('search-btn');
+        const container = document.getElementById('search-results');
+
+        if (!query) {
+          setEl(statusEl, 'please enter a title to search', 'error');
+          if (container) {
+            container.innerHTML = '';
+            container.classList.remove('visible');
+          }
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'searching…';
+        setEl(statusEl, 'checking readhive and preparing discovery links…');
+
+        try {
+          const res = await fetch(`${SERVER}/search-title`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+          });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || 'search failed');
+          const data = JSON.parse(raw);
+          renderSearchResults(data);
+
+          const count = Array.isArray(data.readhive_matches) ? data.readhive_matches.length : 0;
+          if (count) {
+            setEl(statusEl, `found ${count} readhive match${count === 1 ? '' : 'es'} — webnovel and novel updates are below too`, 'success');
+          } else {
+            setEl(statusEl, 'no direct readhive match yet — try webnovel or novel updates below');
+          }
+        } catch (e) {
+          const message = e?.message || 'search failed';
+          const friendly = /Failed to fetch|NetworkError/i.test(message)
+            ? getServerStartHelp()
+            : message;
+          if (container) {
+            container.innerHTML = '';
+            container.classList.remove('visible');
+          }
+          setEl(statusEl, friendly, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'show matches';
+        }
       }
 
       // ── copy button ──
@@ -1253,7 +1631,7 @@
       async function fetchInfo() {
         const url = document.getElementById('url').value.trim();
         const fetchStatusEl = document.getElementById('fetch-status');
-        if (!url) { setEl(fetchStatusEl, 'please enter a readhive url', 'error'); return; }
+        if (!url) { setEl(fetchStatusEl, 'please enter a novel url', 'error'); return; }
 
         const fetchBtn = document.getElementById('fetch-btn');
         fetchBtn.disabled = true;
@@ -1288,9 +1666,13 @@
 
           document.getElementById('to-ch').value = data.total_chapters;
           document.getElementById('download-card').style.display = 'block';
-          setEl(fetchStatusEl, 'ready to download ♡', 'success');
+          setEl(fetchStatusEl, 'ready to download', 'success');
         } catch (e) {
-          setEl(fetchStatusEl, 'could not connect — start it with: cd "/Users/hujiaqi/Downloads/PERSONAL SITES/READS" && python3 NOVEL-TO-EPUB/readhive_server.py', 'error');
+          const message = e?.message || '';
+          const friendly = /Failed to fetch|NetworkError/i.test(message)
+            ? getServerStartHelp()
+            : message || 'could not fetch info for this url';
+          setEl(fetchStatusEl, friendly, 'error');
         } finally {
           fetchBtn.disabled = false;
           fetchBtn.textContent = 'fetch info';
@@ -1499,19 +1881,41 @@
       if (!localStorage.getItem(HISTORY_KEY)) {
         persistHistory(loadHistory());
       }
+      refreshServerCommandUi();
       window.addEventListener('storage', (event) => {
         if (event.key === HISTORY_KEY) {
           renderHistory();
         }
+        if (event.key === PRIVATE_SERVER_DIR_KEY) {
+          refreshServerCommandUi();
+        }
       });
       document.getElementById('refresh-app')?.addEventListener('click', handleManualRefresh);
+      document.getElementById('search-title')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          searchSources();
+        }
+      });
+      document.getElementById('url')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          fetchInfo();
+        }
+      });
       document.getElementById('author').addEventListener('input', () => {
         updateCoverPreview(document.getElementById('cover-url').value.trim());
       });
       document.getElementById('cover-url').addEventListener('input', (event) => {
         updateCoverPreview(event.target.value.trim());
       });
-      window.addEventListener('load', initializeCloudSync);
+      window.addEventListener('load', () => {
+        initializeCloudSync();
+        refreshServerCommandUi();
+        window.WishlistCloud?.onAuthChange?.(() => {
+          refreshServerCommandUi();
+        });
+      });
     </script>
   </body>
 </html>

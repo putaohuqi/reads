@@ -43,6 +43,42 @@ HEADERS = {
 }
 
 
+def detect_source(url: str) -> str:
+    host = urlparse(url).netloc.lower()
+    if host.startswith("www."):
+        host = host[4:]
+
+    if host.endswith("readhive.org"):
+        return "readhive"
+    if host.endswith("webnovel.com"):
+        return "webnovel"
+    if host.endswith("novelupdates.com"):
+        return "novelupdates"
+    if host.endswith("wordpress.com"):
+        return "wordpress"
+    return "other"
+
+
+def unsupported_source_message(source: str) -> str:
+    if source == "webnovel":
+        return (
+            "Webnovel can be used for discovery, but this downloader cannot "
+            "generate EPUBs from Webnovel directly yet. Open the Webnovel search "
+            "result, then paste a supported translator-site URL here."
+        )
+    if source == "novelupdates":
+        return (
+            "Novel Updates is a directory, not a direct chapter source. Use it to "
+            "find translator sites, then paste the translator URL here."
+        )
+    if source == "wordpress":
+        return (
+            "This translator site is not supported by the downloader yet, so it "
+            "cannot generate an EPUB from this URL right now."
+        )
+    return "cannot generate epub for this site yet"
+
+
 def register_cancel_event(job_id: str) -> threading.Event:
     event = threading.Event()
     with CANCEL_EVENTS_LOCK:
@@ -67,6 +103,38 @@ def absolute_url(url: str) -> str:
 def parse_series_url(url: str) -> str | None:
     m = re.search(r"readhive\.org/series/(\d+)", url)
     return m.group(1) if m else None
+
+
+def search_readhive(query: str) -> list[dict[str, str]]:
+    response = requests.post(
+        absolute_url("/ajax"),
+        headers=HEADERS,
+        data={"action": "search", "query": query},
+        timeout=20,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    items = payload.get("data", []) if isinstance(payload, dict) else []
+    results: list[dict[str, str]] = []
+
+    for item in items[:6]:
+        title = str(item.get("title", "")).strip()
+        url = str(item.get("url", "")).strip()
+        thumb = str(item.get("thumb", "")).strip()
+        series_id = parse_series_url(url)
+        if not title or not url or not series_id:
+            continue
+        results.append(
+            {
+                "series_id": series_id,
+                "title": title,
+                "url": url,
+                "thumb": absolute_url(thumb) if thumb else "",
+                "source": "readhive",
+            }
+        )
+
+    return results
 
 
 def fetch_series_info(series_id: str) -> tuple[str, str, str, int, str]:
@@ -331,15 +399,37 @@ def route_fetch_info():
     url = (data or {}).get("url", "").strip()
     if not url:
         return "missing url", 400
+    source = detect_source(url)
+    if source != "readhive":
+        return unsupported_source_message(source), 400
     series_id = parse_series_url(url)
     if not series_id:
-        return "could not find series ID in URL", 400
+        return "could not find a readhive series ID in this url", 400
     try:
         title, author, desc, total, cover_url = fetch_series_info(series_id)
     except Exception as e:
         return str(e), 502
     return {"series_id": series_id, "title": title, "author": author,
             "description": desc, "total_chapters": total, "cover_url": cover_url}
+
+
+@app.post("/search-title")
+def route_search_title():
+    data = request.get_json(force=True) or {}
+    query = str(data.get("query", "")).strip()
+    if len(query) < 2:
+        return "search query must be at least 2 characters", 400
+
+    try:
+        readhive_matches = search_readhive(query)
+    except Exception as e:
+        return str(e), 502
+
+    return {
+        "query": query,
+        "readhive_matches": readhive_matches,
+        "has_readhive_matches": bool(readhive_matches),
+    }
 
 
 @app.get("/cover-preview")
