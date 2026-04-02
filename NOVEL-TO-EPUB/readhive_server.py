@@ -15,6 +15,7 @@ import threading
 import time
 import uuid
 from html import escape
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
@@ -23,6 +24,14 @@ from bs4 import BeautifulSoup
 from ebooklib import epub
 from flask import Flask, Response, request
 from flask_cors import CORS
+
+try:
+    from pypdf import PdfReader
+except Exception:
+    try:
+        from PyPDF2 import PdfReader  # type: ignore
+    except Exception:
+        PdfReader = None  # type: ignore
 
 app = Flask(__name__)
 CORS(app)
@@ -41,6 +50,14 @@ HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     )
 }
+
+WORDPRESS_CATEGORY_SEGMENT = "/category/"
+WORDPRESS_CHAPTER_RE = re.compile(r"\bchapter\W*(\d+)\b", re.I)
+PDF_HEADING_RE = re.compile(
+    r"^(?:chapter|chap\.?|ch\.?)\s*\d+(?:\.\d+)*\b.*$|"
+    r"^(?:prologue|epilogue|afterword|interlude|side story|extra|appendix)\b.*$",
+    re.I,
+)
 
 
 def detect_source(url: str) -> str:
@@ -71,11 +88,6 @@ def unsupported_source_message(source: str) -> str:
             "Novel Updates is a directory, not a direct chapter source. Use it to "
             "find translator sites, then paste the translator URL here."
         )
-    if source == "wordpress":
-        return (
-            "This translator site is not supported by the downloader yet, so it "
-            "cannot generate an EPUB from this URL right now."
-        )
     return "cannot generate epub for this site yet"
 
 
@@ -98,6 +110,218 @@ def clear_cancel_event(job_id: str) -> None:
 
 def absolute_url(url: str) -> str:
     return urljoin(BASE_URL, url)
+
+
+def absolute_url_for(base_url: str, url: str) -> str:
+    return urljoin(base_url, url)
+
+
+def fetch_soup(url: str, timeout: int = 20) -> BeautifulSoup:
+    response = requests.get(url, headers=HEADERS, timeout=timeout)
+    response.raise_for_status()
+    return BeautifulSoup(response.text, "html.parser")
+
+
+def get_meta_content(soup: BeautifulSoup, *, prop: str = "", name: str = "") -> str:
+    if prop:
+        meta = soup.find("meta", attrs={"property": prop})
+        if meta and meta.get("content"):
+            return meta["content"].strip()
+    if name:
+        meta = soup.find("meta", attrs={"name": name})
+        if meta and meta.get("content"):
+            return meta["content"].strip()
+    return ""
+
+
+def clean_text_html(value: str) -> str:
+    return BeautifulSoup(value or "", "html.parser").get_text(" ", strip=True)
+
+
+def extract_wordpress_author(description: str, site_title: str) -> str:
+    text = clean_text_html(description)
+    author_match = re.search(r"\bI['’]m\s+([A-Za-z0-9 _-]{2,40}?)(?:\s+(?:and|&)\b|[,.!~]|$)", text, re.I)
+    if author_match:
+        return author_match.group(1).strip()
+    return site_title
+
+
+def extract_wordpress_chapter_number(title: str) -> int | None:
+    match = WORDPRESS_CHAPTER_RE.search(title or "")
+    if not match:
+        return None
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return None
+
+
+def infer_wordpress_series_title(page_title: str) -> str:
+    text = clean_text_html(page_title)
+    if not text:
+        return ""
+    split = re.split(r"\s*:\s*Chapter\b", text, maxsplit=1, flags=re.I)
+    if split and split[0].strip():
+        return split[0].strip()
+    return text
+
+
+def normalize_wordpress_category_url(url: str) -> str:
+    parsed = urlparse(url)
+    path = re.sub(r"/page/\d+/?$", "/", parsed.path or "/")
+    return f"{parsed.scheme}://{parsed.netloc}{path}"
+
+
+def extract_wordpress_category_url(page_url: str, soup: BeautifulSoup) -> str:
+    parsed = urlparse(page_url)
+    if WORDPRESS_CATEGORY_SEGMENT in parsed.path:
+        return normalize_wordpress_category_url(page_url)
+
+    selectors = [
+        ".wp-block-post-terms a[href*='/category/']",
+        ".wp-block-categories a[href*='/category/']",
+        "a[href*='/category/']",
+    ]
+    seen: list[str] = []
+    for selector in selectors:
+        for link in soup.select(selector):
+            href = link.get("href", "").strip()
+            if not href:
+                continue
+            resolved = absolute_url_for(page_url, href)
+            normalized = normalize_wordpress_category_url(resolved)
+            if normalized not in seen:
+                seen.append(normalized)
+
+    if len(seen) == 1:
+        return seen[0]
+
+    for candidate in seen:
+        if "uncategorized" not in candidate.lower():
+            return candidate
+    return seen[0] if seen else ""
+
+
+def fetch_wordpress_page(url: str) -> tuple[BeautifulSoup, str, str, str, str]:
+    soup = fetch_soup(url)
+    site_title = (
+        get_meta_content(soup, prop="og:site_name")
+        or clean_text_html(get_meta_content(soup, prop="og:title"))
+        or clean_text_html(soup.title.get_text(" ", strip=True) if soup.title else "")
+    )
+    description = (
+        get_meta_content(soup, prop="og:description")
+        or get_meta_content(soup, name="description")
+    )
+    cover_url = get_meta_content(soup, prop="og:image")
+    category_url = extract_wordpress_category_url(url, soup)
+    return soup, site_title, description, cover_url, category_url
+
+
+def collect_wordpress_chapters(category_url: str, expected_title: str = "") -> dict[int, str]:
+    chapters: dict[int, str] = {}
+    next_url = category_url
+    visited: set[str] = set()
+
+    for _ in range(60):
+        if not next_url or next_url in visited:
+            break
+        visited.add(next_url)
+        soup = fetch_soup(next_url)
+
+        for link in soup.select(".wp-block-post-title a[href], .wp-block-latest-posts__post-title[href]"):
+            href = link.get("href", "").strip()
+            title = clean_text_html(link.get_text(" ", strip=True))
+            chapter_num = extract_wordpress_chapter_number(title)
+            if not href or chapter_num is None:
+                continue
+            if expected_title:
+                normalized_title = title.casefold()
+                if expected_title.casefold() not in normalized_title:
+                    continue
+            chapters.setdefault(chapter_num, absolute_url_for(next_url, href))
+
+        next_link = soup.select_one(".wp-block-query-pagination-next[href]")
+        next_url = absolute_url_for(next_url, next_link["href"]) if next_link and next_link.get("href") else ""
+
+    return chapters
+
+
+def fetch_wordpress_series_info(url: str) -> tuple[str, str, str, int, str, int, int, str]:
+    soup, site_title, description, cover_url, category_url = fetch_wordpress_page(url)
+    if not category_url:
+        raise ValueError(
+            "could not determine the novel archive for this translator site. "
+            "try pasting the category url directly."
+        )
+
+    category_soup = fetch_soup(category_url)
+    category_description = (
+        get_meta_content(category_soup, prop="og:description")
+        or get_meta_content(category_soup, name="description")
+    )
+    category_cover_url = get_meta_content(category_soup, prop="og:image")
+    if category_description.lower().startswith("posts about "):
+        category_description = ""
+
+    parsed_category = urlparse(category_url)
+    site_root = f"{parsed_category.scheme}://{parsed_category.netloc}/"
+    parsed_input = urlparse(url)
+    input_path = parsed_input.path.rstrip("/")
+    is_site_root_input = input_path in {"", "/"}
+    is_category_input = normalize_wordpress_category_url(url) == category_url
+
+    if (
+        (not is_site_root_input and not is_category_input)
+        or not description
+        or description.lower().startswith("posts about ")
+        or len(clean_text_html(description)) > 180
+        or "chapter" in clean_text_html(description).lower()
+    ):
+        _, root_site_title, root_description, root_cover_url, _ = fetch_wordpress_page(site_root)
+        if root_site_title:
+            site_title = root_site_title
+        if root_description:
+            description = root_description
+        if root_cover_url:
+            cover_url = root_cover_url
+    elif category_description and normalize_wordpress_category_url(url) != category_url:
+        description = category_description
+    if category_cover_url:
+        cover_url = category_cover_url
+
+    category_heading = (
+        category_soup.select_one(".wp-block-query-title span")
+        or category_soup.select_one(".wp-block-query-title")
+    )
+    series_title = clean_text_html(category_heading.get_text(" ", strip=True) if category_heading else "")
+    series_title = re.sub(r"^\s*Category:\s*", "", series_title, flags=re.I).strip()
+    if not series_title:
+        page_og_title = get_meta_content(soup, prop="og:title")
+        series_title = infer_wordpress_series_title(page_og_title or site_title)
+    if not series_title:
+        series_title = site_title or "WordPress translator series"
+
+    chapters = collect_wordpress_chapters(category_url, series_title)
+    if not chapters:
+        raise ValueError("could not find chapter posts for this translator site")
+
+    chapter_numbers = sorted(chapters)
+    total_chapters = chapter_numbers[-1]
+    first_chapter = chapter_numbers[0]
+    author = extract_wordpress_author(description, site_title or series_title)
+    resolved_cover_url = absolute_url_for(url, cover_url) if cover_url else ""
+
+    return (
+        series_title,
+        author,
+        clean_text_html(description),
+        total_chapters,
+        resolved_cover_url,
+        first_chapter,
+        len(chapter_numbers),
+        category_url,
+    )
 
 
 def parse_series_url(url: str) -> str | None:
@@ -250,9 +474,7 @@ def sanitize_chapter_html(content_el: BeautifulSoup) -> str:
 
 def fetch_chapter(series_id: str, chapter_num: int) -> tuple[str, str]:
     url = absolute_url(f"/series/{series_id}/{chapter_num}/")
-    r = requests.get(url, headers=HEADERS, timeout=15)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
+    soup = fetch_soup(url, timeout=15)
 
     page_title = soup.title.string if soup.title else f"Chapter {chapter_num}"
     chapter_title = re.sub(r"\s*[–—-]\s*Readhive.*$", "", page_title).strip()
@@ -271,6 +493,191 @@ def fetch_chapter(series_id: str, chapter_num: int) -> tuple[str, str]:
         html = "<p>Content not found.</p>"
 
     return chapter_title, html
+
+
+def fetch_wordpress_chapter(chapter_url: str) -> tuple[str, str]:
+    soup = fetch_soup(chapter_url, timeout=20)
+    page_title = clean_text_html(get_meta_content(soup, prop="og:title"))
+    chapter_title = page_title or clean_text_html(soup.title.get_text(" ", strip=True) if soup.title else "")
+    if not chapter_title:
+        chapter_title = "Chapter"
+
+    content_el = (
+        soup.select_one(".entry-content.wp-block-post-content")
+        or soup.select_one(".entry-content")
+        or soup.select_one(".wp-block-post-content")
+        or soup.find("article")
+        or soup.find("main")
+    )
+    if content_el:
+        html = sanitize_chapter_html(content_el)
+    else:
+        html = "<p>Content not found.</p>"
+
+    return chapter_title, html
+
+
+def ensure_pdf_support() -> None:
+    if PdfReader is None:
+        raise RuntimeError(
+            "pdf conversion needs pypdf. run pip3 install -r NOVEL-TO-EPUB/requirements.txt "
+            "and restart the local server."
+        )
+
+
+def get_pdf_metadata_value(metadata, *keys: str) -> str:
+    if not metadata:
+        return ""
+    for key in keys:
+        try:
+            value = metadata.get(key)
+        except Exception:
+            value = getattr(metadata, key, None)
+        if value:
+            return str(value).strip()
+    return ""
+
+
+def normalize_pdf_text(text: str) -> str:
+    if not text:
+        return ""
+    text = text.replace("\r", "\n").replace("\xa0", " ")
+    text = re.sub(r"-\n(?=[a-z])", "", text)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def pdf_text_to_html(text: str) -> str:
+    normalized = normalize_pdf_text(text)
+    if not normalized:
+        return "<p>Content not found.</p>"
+
+    blocks = re.split(r"\n\s*\n", normalized)
+    parts: list[str] = []
+    for block in blocks:
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        if not lines:
+            continue
+        if len(lines) == 1 and lines[0].isdigit():
+            continue
+        paragraph = " ".join(lines)
+        parts.append(f"<p>{escape(paragraph)}</p>")
+
+    return "".join(parts) or "<p>Content not found.</p>"
+
+
+def iter_pdf_outline_items(items):
+    for item in items or []:
+        if isinstance(item, list):
+            yield from iter_pdf_outline_items(item)
+        else:
+            yield item
+
+
+def extract_pdf_outline_entries(reader) -> list[tuple[str, int]]:
+    outline = getattr(reader, "outline", None)
+    if not outline:
+        return []
+
+    entries: list[tuple[str, int]] = []
+    for item in iter_pdf_outline_items(outline):
+        title = clean_text_html(getattr(item, "title", ""))
+        if not title:
+            continue
+        try:
+            page_index = int(reader.get_destination_page_number(item))
+        except Exception:
+            continue
+        entries.append((title, page_index))
+
+    entries.sort(key=lambda entry: entry[1])
+    deduped: list[tuple[str, int]] = []
+    last_page = None
+    for title, page_index in entries:
+        if page_index == last_page:
+            continue
+        deduped.append((title, page_index))
+        last_page = page_index
+    return deduped
+
+
+def build_pdf_outline_chapters(page_texts: list[str], outline_entries: list[tuple[str, int]]) -> list[tuple[str, str]]:
+    chapters: list[tuple[str, str]] = []
+    total_pages = len(page_texts)
+
+    for index, (title, start_page) in enumerate(outline_entries):
+        if start_page < 0 or start_page >= total_pages:
+            continue
+        end_page = outline_entries[index + 1][1] if index + 1 < len(outline_entries) else total_pages
+        section_text = "\n\n".join(page_texts[start_page:end_page]).strip()
+        html = pdf_text_to_html(section_text)
+        if "Content not found" in html:
+            continue
+        chapters.append((title[:200], html))
+
+    return chapters
+
+
+def build_pdf_heading_chapters(page_texts: list[str], fallback_title: str) -> list[tuple[str, str]]:
+    joined = "\n\n".join(text for text in page_texts if text.strip())
+    if not joined:
+        return []
+
+    chapters: list[tuple[str, str]] = []
+    current_title = ""
+    current_lines: list[str] = []
+
+    def flush_current() -> None:
+        nonlocal current_title, current_lines
+        content = "\n".join(current_lines).strip()
+        if not content:
+            current_lines = []
+            return
+        html = pdf_text_to_html(content)
+        if "Content not found" not in html:
+            chapters.append((current_title or fallback_title, html))
+        current_lines = []
+
+    for raw_line in joined.splitlines():
+        line = raw_line.strip()
+        if line and len(line) <= 140 and PDF_HEADING_RE.match(line):
+            if current_lines:
+                flush_current()
+            current_title = line
+            current_lines = []
+            continue
+        current_lines.append(raw_line)
+
+    if current_lines:
+        flush_current()
+
+    return chapters if len(chapters) >= 2 else []
+
+
+def extract_pdf_content(pdf_bytes: bytes, fallback_title: str) -> tuple[list[tuple[str, str]], str, str, int]:
+    ensure_pdf_support()
+
+    reader = PdfReader(BytesIO(pdf_bytes))
+    metadata = getattr(reader, "metadata", None)
+    meta_title = get_pdf_metadata_value(metadata, "/Title", "title")
+    meta_author = get_pdf_metadata_value(metadata, "/Author", "author")
+
+    page_texts = [normalize_pdf_text(page.extract_text() or "") for page in reader.pages]
+    page_count = len(page_texts)
+    if not any(text.strip() for text in page_texts):
+        raise RuntimeError(
+            "no text was found in this pdf. it may be a scanned/image pdf and need OCR first."
+        )
+
+    outline_entries = extract_pdf_outline_entries(reader)
+    chapters = build_pdf_outline_chapters(page_texts, outline_entries) if outline_entries else []
+    if not chapters:
+        chapters = build_pdf_heading_chapters(page_texts, meta_title or fallback_title)
+    if not chapters:
+        chapters = [(meta_title or fallback_title or "PDF import", pdf_text_to_html("\n\n".join(page_texts)))]
+
+    return chapters, meta_title, meta_author, page_count
 
 
 # ─── EPUB helpers ─────────────────────────────────────────────────────────────
@@ -400,17 +807,43 @@ def route_fetch_info():
     if not url:
         return "missing url", 400
     source = detect_source(url)
-    if source != "readhive":
-        return unsupported_source_message(source), 400
-    series_id = parse_series_url(url)
-    if not series_id:
-        return "could not find a readhive series ID in this url", 400
     try:
-        title, author, desc, total, cover_url = fetch_series_info(series_id)
+        if source == "readhive":
+            series_id = parse_series_url(url)
+            if not series_id:
+                return "could not find a readhive series ID in this url", 400
+            title, author, desc, total, cover_url = fetch_series_info(series_id)
+            return {
+                "source": source,
+                "series_id": series_id,
+                "series_url": url,
+                "title": title,
+                "author": author,
+                "description": desc,
+                "total_chapters": total,
+                "chapter_count": total,
+                "min_chapter": 1 if total else 0,
+                "cover_url": cover_url,
+            }
+
+        if source == "wordpress":
+            title, author, desc, total, cover_url, first_chapter, chapter_count, archive_url = fetch_wordpress_series_info(url)
+            return {
+                "source": source,
+                "series_id": archive_url,
+                "series_url": archive_url,
+                "title": title,
+                "author": author,
+                "description": desc,
+                "total_chapters": total,
+                "chapter_count": chapter_count,
+                "min_chapter": first_chapter,
+                "cover_url": cover_url,
+            }
     except Exception as e:
         return str(e), 502
-    return {"series_id": series_id, "title": title, "author": author,
-            "description": desc, "total_chapters": total, "cover_url": cover_url}
+
+    return unsupported_source_message(source), 400
 
 
 @app.post("/search-title")
@@ -458,10 +891,57 @@ def route_cover_preview():
     return preview
 
 
+@app.post("/convert-pdf")
+def route_convert_pdf():
+    pdf_file = request.files.get("file")
+    if pdf_file is None:
+        return "missing pdf file", 400
+
+    filename = str(pdf_file.filename or "").strip()
+    if not filename.lower().endswith(".pdf"):
+        return "please upload a .pdf file", 400
+
+    pdf_bytes = pdf_file.read()
+    if not pdf_bytes:
+        return "uploaded pdf was empty", 400
+
+    title = str(request.form.get("title", "")).strip()
+    author = str(request.form.get("author", "")).strip()
+    description = str(request.form.get("description", "")).strip()
+    cover_url = str(request.form.get("cover_url", "")).strip()
+    fallback_title = Path(filename).stem.strip() or "PDF import"
+
+    try:
+        chapters, meta_title, meta_author, page_count = extract_pdf_content(pdf_bytes, fallback_title)
+    except Exception as e:
+        return str(e), 400
+
+    final_title = title or meta_title or fallback_title
+    final_author = author or meta_author
+    safe_title = re.sub(r'[\\/*?:"<>|]', "_", final_title)
+    output_path = str(Path.home() / "Desktop" / f"{safe_title}.epub")
+
+    try:
+        build_epub(final_title, final_author, description, cover_url, chapters, output_path)
+    except Exception as e:
+        return str(e), 502
+
+    return {
+        "ok": True,
+        "path": output_path,
+        "title": final_title,
+        "author": final_author,
+        "page_count": page_count,
+        "chapter_count": len(chapters),
+    }
+
+
 @app.post("/download")
 def route_download():
     data = request.get_json(force=True) or {}
     series_id = data.get("series_id", "").strip()
+    source = str(data.get("source", "")).strip() or ("readhive" if series_id.isdigit() else "")
+    series_url = str(data.get("url", "")).strip()
     job_id = str(data.get("job_id", "")).strip() or str(uuid.uuid4())
     from_ch = int(data.get("from_ch", 1))
     to_ch = int(data.get("to_ch", 1))
@@ -473,8 +953,14 @@ def route_download():
     merge_path = data.get("merge_path", "").strip()
     original_from_ch = int(data.get("original_from_ch", from_ch))
 
-    if not series_id:
+    if source == "readhive" and not series_id:
         return "missing series_id", 400
+    if source == "wordpress" and not series_url:
+        series_url = series_id
+    if source == "wordpress" and not series_url:
+        return "missing url for wordpress source", 400
+    if source not in {"readhive", "wordpress"}:
+        return unsupported_source_message(source or detect_source(series_url or series_id)), 400
 
     cancel_event = register_cancel_event(job_id)
 
@@ -496,10 +982,26 @@ def route_download():
             effective_author = author
             effective_description = description
             effective_cover_url = cover_url
+            wordpress_archive_url = series_url
+            wordpress_chapter_map: dict[int, str] = {}
 
             if not (effective_author and effective_description and effective_cover_url):
                 try:
-                    _, fetched_author, fetched_description, _, fetched_cover_url = fetch_series_info(series_id)
+                    if source == "readhive":
+                        _, fetched_author, fetched_description, _, fetched_cover_url = fetch_series_info(series_id)
+                    else:
+                        (
+                            _,
+                            fetched_author,
+                            fetched_description,
+                            _,
+                            fetched_cover_url,
+                            _,
+                            _,
+                            fetched_archive_url,
+                        ) = fetch_wordpress_series_info(series_url)
+                        if fetched_archive_url:
+                            wordpress_archive_url = fetched_archive_url
                     if not effective_author:
                         effective_author = fetched_author
                     if not effective_description:
@@ -508,6 +1010,16 @@ def route_download():
                         effective_cover_url = fetched_cover_url
                 except Exception:
                     pass
+
+            if source == "wordpress":
+                try:
+                    wordpress_chapter_map = collect_wordpress_chapters(wordpress_archive_url)
+                except Exception as e:
+                    yield json.dumps({
+                        "type": "error",
+                        "message": f"could not load wordpress chapter list: {e}",
+                    }) + "\n"
+                    return
 
             if merge_path and os.path.isfile(merge_path):
                 try:
@@ -542,7 +1054,13 @@ def route_download():
                     return
 
                 try:
-                    ch_title, ch_html = fetch_chapter(series_id, ch_num)
+                    if source == "readhive":
+                        ch_title, ch_html = fetch_chapter(series_id, ch_num)
+                    else:
+                        chapter_url = wordpress_chapter_map.get(ch_num)
+                        if not chapter_url:
+                            raise ValueError("chapter url not found")
+                        ch_title, ch_html = fetch_wordpress_chapter(chapter_url)
                     new_chapters.append((ch_title, ch_html))
                     yield json.dumps({
                         "type": "progress",

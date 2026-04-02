@@ -29,9 +29,10 @@
       .epub-col-right { display: contents; }
       .epub-card-how { grid-column: 1; grid-row: 1; }
       .epub-card-search { grid-column: 1; grid-row: 2; }
-      .epub-card-details { grid-column: 1; grid-row: 3; }
-      #download-card { grid-column: 1; grid-row: 4; }
-      .epub-card-setup { grid-column: 1; grid-row: 5; }
+      .epub-card-pdf { grid-column: 1; grid-row: 3; }
+      .epub-card-details { grid-column: 1; grid-row: 4; }
+      #download-card { grid-column: 1; grid-row: 5; }
+      .epub-card-setup { grid-column: 1; grid-row: 6; }
       #history-card {
         grid-column: 2;
         grid-row: 1;
@@ -47,6 +48,7 @@
         .epub-card { backdrop-filter: none; }
         .epub-card-how,
         .epub-card-search,
+        .epub-card-pdf,
         .epub-card-details,
         #download-card,
         .epub-card-setup,
@@ -144,6 +146,10 @@
         outline: none;
         transition: border-color 0.15s, box-shadow 0.15s;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+      }
+      .epub-input[type="file"] {
+        height: auto;
+        padding: 9px 12px;
       }
       .epub-input:focus {
         border-color: var(--blue-2);
@@ -300,6 +306,7 @@
       }
 
       /* ── series info ── */
+      #pdf-info,
       #series-info {
         display: none;
         background: var(--chip-active-bg);
@@ -311,6 +318,7 @@
         font-weight: 600;
         color: var(--text);
       }
+      #pdf-info.visible,
       #series-info.visible { display: block; }
 
       .cover-preview-wrap {
@@ -636,6 +644,29 @@
         margin-top: 12px;
         border-top: 1px solid var(--border);
       }
+      .history-edit-panel {
+        padding-top: 12px;
+        margin-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .history-edit-preview {
+        display: none;
+        margin-top: 12px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--bg);
+        overflow: hidden;
+      }
+      .history-edit-preview.visible {
+        display: block;
+      }
+      .history-edit-note {
+        margin: 0;
+        font-size: 0.72rem;
+        color: var(--muted);
+        opacity: 0.82;
+      }
 
       .merge-label {
         display: flex;
@@ -660,7 +691,7 @@
               <a class="chip page-link" href="faves.html">faves</a>
               <a class="chip page-link is-active" href="epub.html">epub</a>
             </nav>
-            <p class="subtitle">search readhive, browse webnovel, and turn supported links into .epub files</p>
+            <p class="subtitle">search readhive first, then jump to novel updates if needed</p>
             <h1>epub downloader ✦</h1>
             <p class="reorder-hint">search a title · paste a source url · set chapter range · save to desktop</p>
           </div>
@@ -685,7 +716,7 @@
           <div class="epub-card epub-card-how">
             <p class="epub-card-title">how it works</p>
             <ol class="steps">
-              <li>search a title below to check ReadHive first and open discovery links for Webnovel or Novel Updates</li>
+              <li>search a title below to check ReadHive first, and if there is no match, open Novel Updates to find translator sites</li>
               <li>paste a supported source url and click fetch info to load the novel details</li>
               <li>set your chapter range, then click download epub</li>
               <li>the Python server runs locally and saves the .epub to your Desktop</li>
@@ -699,7 +730,7 @@
             <div class="epub-field">
               <label class="epub-label" for="search-title">search by title</label>
               <input class="epub-input" type="text" id="search-title" placeholder="shadow slave" />
-              <p class="epub-hint">ReadHive matches can auto-fill below. Webnovel and Novel Updates open in a new tab for discovery.</p>
+              <p class="epub-hint">ReadHive matches can auto-fill below. If there is no match, Novel Updates opens in a new tab so you can find translator sites.</p>
             </div>
             <div class="epub-btn-row">
               <button class="add-btn" id="search-btn" onclick="searchSources()">show matches</button>
@@ -708,13 +739,52 @@
             <div id="search-results" class="source-results"></div>
           </div>
 
+          <!-- PDF TO EPUB -->
+          <div class="epub-card epub-card-pdf">
+            <p class="epub-card-title">pdf to epub</p>
+            <div class="epub-field">
+              <label class="epub-label" for="pdf-file">upload pdf</label>
+              <input class="epub-input" type="file" id="pdf-file" accept="application/pdf,.pdf" />
+              <p class="epub-hint">text-based PDFs work best. scanned image PDFs usually need OCR first.</p>
+            </div>
+            <div id="pdf-info"></div>
+            <div class="epub-row-2">
+              <div class="epub-field">
+                <label class="epub-label" for="pdf-title">book title</label>
+                <input class="epub-input" type="text" id="pdf-title" placeholder="leave blank to use the PDF title" />
+              </div>
+              <div class="epub-field">
+                <label class="epub-label" for="pdf-author">author</label>
+                <input class="epub-input" type="text" id="pdf-author" placeholder="leave blank to use the PDF author" />
+              </div>
+            </div>
+            <div class="epub-field">
+              <label class="epub-label" for="pdf-cover-url">cover image url</label>
+              <input class="epub-input" type="url" id="pdf-cover-url" placeholder="https://..." />
+              <div class="cover-preview-wrap" id="pdf-cover-preview-wrap">
+                <div class="cover-preview-card">
+                  <img class="cover-preview" id="pdf-cover-preview" alt="pdf cover preview" />
+                  <div class="cover-preview-meta">
+                    <p class="cover-preview-title" id="pdf-cover-preview-title"></p>
+                    <p class="cover-preview-author" id="pdf-cover-preview-author"></p>
+                    <p class="cover-preview-note">cover preview for the converted epub</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="epub-btn-row">
+              <button class="add-btn" id="pdf-convert-btn" type="button" onclick="convertPdf()">convert pdf</button>
+            </div>
+            <div id="pdf-status" class="epub-status"></div>
+          </div>
+
           <!-- NOVEL DETAILS -->
           <div class="epub-card epub-card-details">
             <p class="epub-card-title">novel details</p>
             <div class="epub-field">
               <label class="epub-label" for="url">novel or translator url</label>
               <input class="epub-input" type="url" id="url" placeholder="https://readhive.org/series/12345/" />
-              <p class="epub-hint">ReadHive works directly right now. Other sites will show a clear unsupported message if they cannot generate an epub yet.</p>
+              <p class="epub-hint">ReadHive works directly, and compatible public WordPress translator sites can too. Other sites will show a clear unsupported message if they cannot generate an epub yet.</p>
             </div>
             <div id="series-info"></div>
             <div id="metadata-fields" style="display:none; margin-top:12px;">
@@ -853,7 +923,6 @@
       const PRIVATE_SERVER_DIR_KEY = 'epub_private_server_dir';
       const GENERIC_SERVER_DIR = '/path/to/your/READS';
       const SERVER_START_SUFFIX = 'python3 NOVEL-TO-EPUB/readhive_server.py';
-      const WEBNOVEL_SEARCH_BASE = 'https://www.webnovel.com/search?keywords=';
       const NOVELUPDATES_SEARCH_BASE = 'https://www.novelupdates.com/series-finder/?sf=1&sh=';
 
       // ── generic helpers ──
@@ -947,10 +1016,6 @@
         refreshServerCommandUi();
       }
 
-      function buildWebnovelSearchUrl(query) {
-        return WEBNOVEL_SEARCH_BASE + encodeURIComponent(query);
-      }
-
       function buildNovelUpdatesSearchUrl(query) {
         return NOVELUPDATES_SEARCH_BASE + encodeURIComponent(query);
       }
@@ -1014,6 +1079,11 @@
         btn.style.display = visible ? 'inline-flex' : 'none';
       }
 
+      function getCoverPreviewUrl(url) {
+        if (!url) return '';
+        return `${SERVER}/cover-preview?url=${encodeURIComponent(url)}&ts=${Date.now()}`;
+      }
+
       function updateCoverPreview(url) {
         const wrap = document.getElementById('cover-preview-wrap');
         const img = document.getElementById('cover-preview');
@@ -1032,8 +1102,7 @@
           return;
         }
 
-        const proxiedUrl = `${SERVER}/cover-preview?url=${encodeURIComponent(url)}&ts=${Date.now()}`;
-        img.src = proxiedUrl;
+        img.src = getCoverPreviewUrl(url);
         img.style.display = 'block';
         wrap.classList.add('visible');
         img.onerror = () => {
@@ -1045,9 +1114,128 @@
         };
       }
 
+      function updateHistoryEditPreview(itemId, title, author, url) {
+        const wrap = document.getElementById(`hi-edit-preview-${itemId}`);
+        const img = document.getElementById(`hi-edit-cover-${itemId}`);
+        const titleEl = document.getElementById(`hi-edit-title-${itemId}`);
+        const authorEl = document.getElementById(`hi-edit-author-preview-${itemId}`);
+        if (!wrap || !img || !titleEl || !authorEl) return;
+
+        titleEl.textContent = title || 'untitled';
+        authorEl.textContent = author ? `by ${author}` : 'author not set';
+
+        if (!url) {
+          img.removeAttribute('src');
+          img.style.display = 'none';
+          wrap.classList.add('visible');
+          return;
+        }
+
+        img.src = getCoverPreviewUrl(url);
+        img.style.display = 'block';
+        wrap.classList.add('visible');
+        img.onerror = () => {
+          img.removeAttribute('src');
+          img.style.display = 'none';
+          authorEl.textContent = author
+            ? `by ${author} · cover preview unavailable`
+            : 'author not set · cover preview unavailable';
+        };
+      }
+
+      function getPdfFallbackTitle() {
+        const explicitTitle = document.getElementById('pdf-title')?.value.trim();
+        if (explicitTitle) return explicitTitle;
+
+        const file = document.getElementById('pdf-file')?.files?.[0];
+        if (file?.name) {
+          return file.name.replace(/\.pdf$/i, '').trim() || 'PDF import';
+        }
+
+        return 'PDF import';
+      }
+
+      function updatePdfSelectionInfo() {
+        const info = document.getElementById('pdf-info');
+        const file = document.getElementById('pdf-file')?.files?.[0];
+        if (!info) return;
+
+        if (!file) {
+          info.textContent = '';
+          info.classList.remove('visible');
+          return;
+        }
+
+        const sizeMb = file.size ? (file.size / (1024 * 1024)).toFixed(file.size >= 1024 * 1024 ? 1 : 2) : '';
+        info.textContent = sizeMb ? `${file.name} · ${sizeMb} MB` : file.name;
+        info.classList.add('visible');
+      }
+
+      function updatePdfCoverPreview(url) {
+        const wrap = document.getElementById('pdf-cover-preview-wrap');
+        const img = document.getElementById('pdf-cover-preview');
+        const titleEl = document.getElementById('pdf-cover-preview-title');
+        const authorEl = document.getElementById('pdf-cover-preview-author');
+        if (!wrap || !img || !titleEl || !authorEl) return;
+
+        titleEl.textContent = getPdfFallbackTitle();
+        const author = document.getElementById('pdf-author')?.value.trim() || '';
+        authorEl.textContent = author ? `by ${author}` : 'author not set';
+
+        if (!url) {
+          img.removeAttribute('src');
+          img.style.display = 'none';
+          wrap.classList.add('visible');
+          return;
+        }
+
+        img.src = getCoverPreviewUrl(url);
+        img.style.display = 'block';
+        wrap.classList.add('visible');
+        img.onerror = () => {
+          img.removeAttribute('src');
+          img.style.display = 'none';
+          authorEl.textContent = author
+            ? `by ${author} · cover preview unavailable`
+            : 'author not set · cover preview unavailable';
+        };
+      }
+
+      function toggleHistoryEditPanel(itemId, item, forceOpen) {
+        const panel = document.getElementById(`hi-edit-panel-${itemId}`);
+        if (!panel) return;
+        const shouldOpen = typeof forceOpen === 'boolean'
+          ? forceOpen
+          : panel.style.display === 'none';
+
+        if (shouldOpen) {
+          const addPanel = document.getElementById(`hi-panel-${itemId}`);
+          if (addPanel) addPanel.style.display = 'none';
+          panel.style.display = 'block';
+          const authorValue = document.getElementById(`hi-edit-author-${itemId}`)?.value.trim() || item.author || '';
+          const coverValue = document.getElementById(`hi-edit-cover-url-${itemId}`)?.value.trim() || item.cover_url || '';
+          updateHistoryEditPreview(itemId, item.title, authorValue, coverValue);
+          return;
+        }
+
+        panel.style.display = 'none';
+      }
+
+      function saveHistoryMetadata(itemId) {
+        const author = document.getElementById(`hi-edit-author-${itemId}`)?.value.trim() || '';
+        const coverUrl = document.getElementById(`hi-edit-cover-url-${itemId}`)?.value.trim() || '';
+        updateHistoryEntry(itemId, {
+          author,
+          cover_url: coverUrl,
+        });
+      }
+
       function clearSeriesSelection() {
+        seriesSource = '';
         seriesId = null;
         totalChapters = 0;
+        firstChapter = 1;
+        chapterCount = 0;
         seriesTitle = '';
         seriesAuthor = '';
         seriesDescription = '';
@@ -1148,18 +1336,8 @@
         } else {
           const empty = document.createElement('p');
           empty.className = 'source-empty';
-          empty.textContent = 'No ReadHive matches showed up for this title yet. Try the discovery links below.';
+          empty.textContent = 'No ReadHive matches showed up for this title yet.';
           container.appendChild(empty);
-        }
-
-        if (query) {
-          container.appendChild(buildSourceResult({
-            source: 'Webnovel',
-            title: `Search Webnovel for "${query}"`,
-            note: 'discovery only for now — the downloader cannot generate epubs from Webnovel directly yet',
-            primaryLabel: 'open webnovel',
-            primaryAction: () => openSourceLink(buildWebnovelSearchUrl(query)),
-          }));
 
           container.appendChild(buildSourceResult({
             source: 'Novel Updates',
@@ -1190,7 +1368,7 @@
 
         btn.disabled = true;
         btn.textContent = 'searching…';
-        setEl(statusEl, 'checking readhive and preparing discovery links…');
+        setEl(statusEl, 'checking readhive first…');
 
         try {
           const res = await fetch(`${SERVER}/search-title`, {
@@ -1205,9 +1383,9 @@
 
           const count = Array.isArray(data.readhive_matches) ? data.readhive_matches.length : 0;
           if (count) {
-            setEl(statusEl, `found ${count} readhive match${count === 1 ? '' : 'es'} — webnovel and novel updates are below too`, 'success');
+            setEl(statusEl, `found ${count} readhive match${count === 1 ? '' : 'es'}`, 'success');
           } else {
-            setEl(statusEl, 'no direct readhive match yet — try webnovel or novel updates below');
+            setEl(statusEl, 'no direct readhive match yet — try novel updates below');
           }
         } catch (e) {
           const message = e?.message || 'search failed';
@@ -1325,6 +1503,7 @@
             return {
               ...item,
               id: String(item.id || fallbackId),
+              source: String(item.source || (seriesIdLooksNumeric(seriesId) ? 'readhive' : '')),
               title,
               author: String(item.author || ''),
               description: String(item.description || ''),
@@ -1334,11 +1513,17 @@
               series_id: seriesId,
               from_ch: Number.isFinite(Number(item.from_ch)) ? Number(item.from_ch) : 1,
               to_ch: Number.isFinite(Number(item.to_ch)) ? Number(item.to_ch) : 1,
+              page_count: Number.isFinite(Number(item.page_count)) ? Number(item.page_count) : 0,
+              chapter_count: Number.isFinite(Number(item.chapter_count)) ? Number(item.chapter_count) : 0,
               date: item.date || new Date(now).toISOString(),
               _updatedAt: normalizeTimestamp(item._updatedAt || item.updatedAt || item.date, now),
               _deleted: normalizeDeleted(item._deleted ?? item.deleted),
             };
           });
+      }
+
+      function seriesIdLooksNumeric(value) {
+        return /^\d+$/.test(String(value || '').trim());
       }
 
       function normalizeDeleted(value) {
@@ -1440,6 +1625,15 @@
         const dateStr = new Date(item.date).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         });
+        const isPdfItem = item.source === 'pdf';
+        const historyMeta = isPdfItem
+          ? [
+              'PDF import',
+              item.page_count ? `${item.page_count} page${item.page_count === 1 ? '' : 's'}` : '',
+              item.chapter_count ? `${item.chapter_count} section${item.chapter_count === 1 ? '' : 's'}` : '',
+              dateStr,
+            ].filter(Boolean).join(' · ')
+          : `Ch ${item.from_ch}–${item.to_ch} · ${dateStr}`;
 
         const div = document.createElement('div');
         div.className = 'history-item';
@@ -1447,17 +1641,45 @@
         div.innerHTML = `
           <div class="history-info">
             <strong class="history-title">${escapeHtml(item.title)}</strong>
-            <span class="history-meta">Ch ${item.from_ch}–${item.to_ch} · ${dateStr}</span>
+            <span class="history-meta">${escapeHtml(historyMeta)}</span>
             <span class="history-path" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</span>
           </div>
           <div class="history-actions">
             <div class="history-main-actions">
-              <button class="add-btn hi-redownload-btn">re-download</button>
-              <button class="epub-btn-secondary hi-cancel-redownload-btn" style="display:none;">cancel</button>
-              <button class="add-btn hi-addch-btn">+ add chapters</button>
+              ${isPdfItem ? '' : '<button class="add-btn hi-redownload-btn">re-download</button>'}
+              ${isPdfItem ? '' : '<button class="epub-btn-secondary hi-cancel-redownload-btn" style="display:none;">cancel</button>'}
+              ${isPdfItem ? '' : '<button class="add-btn hi-addch-btn">+ add chapters</button>'}
+              <button class="source-link-btn hi-edit-btn">edit</button>
             </div>
             <button class="history-remove-btn" title="Remove from history">remove</button>
           </div>
+          <div class="history-edit-panel" id="hi-edit-panel-${item.id}" style="display:none;">
+            <div class="epub-row-2">
+              <div class="epub-field">
+                <label class="epub-label" for="hi-edit-author-${item.id}">author</label>
+                <input class="epub-input" type="text" id="hi-edit-author-${item.id}" value="${escapeHtml(item.author || '')}" placeholder="translator or author" />
+              </div>
+              <div class="epub-field">
+                <label class="epub-label" for="hi-edit-cover-url-${item.id}">cover image url</label>
+                <input class="epub-input" type="url" id="hi-edit-cover-url-${item.id}" value="${escapeHtml(item.cover_url || '')}" placeholder="https://..." />
+              </div>
+            </div>
+            <div class="history-edit-preview" id="hi-edit-preview-${item.id}">
+              <div class="cover-preview-card">
+                <img class="cover-preview" id="hi-edit-cover-${item.id}" alt="cover preview" />
+                <div class="cover-preview-meta">
+                  <p class="cover-preview-title" id="hi-edit-title-${item.id}">${escapeHtml(item.title)}</p>
+                  <p class="cover-preview-author" id="hi-edit-author-preview-${item.id}"></p>
+                  <p class="history-edit-note">saved here for future re-downloads and merge downloads</p>
+                </div>
+              </div>
+            </div>
+            <div class="epub-btn-row">
+              <button class="add-btn hi-save-edit-btn">save details</button>
+              <button class="source-link-btn hi-close-edit-btn">close</button>
+            </div>
+          </div>
+          ${isPdfItem ? '' : `
           <div class="history-op" id="hi-op-${item.id}" style="display:none;">
             <div class="progress-label" style="margin-top:10px;">
               <span id="hi-op-text-${item.id}">downloading…</span>
@@ -1500,15 +1722,39 @@
               <div id="hi-panel-log-${item.id}" class="epub-log"></div>
             </div>
           </div>
+          `}
         `;
 
-        div.querySelector('.hi-redownload-btn').onclick = () => redownload(item, div);
-        div.querySelector('.hi-addch-btn').onclick = () => {
-          const panel = document.getElementById(`hi-panel-${item.id}`);
-          panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        };
+        const redownloadBtn = div.querySelector('.hi-redownload-btn');
+        const addChaptersBtn = div.querySelector('.hi-addch-btn');
+        const mergeBtn = div.querySelector('.hi-dl-btn');
+
+        if (redownloadBtn) {
+          redownloadBtn.onclick = () => redownload(item, div);
+        }
+        if (addChaptersBtn) {
+          addChaptersBtn.onclick = () => {
+            const panel = document.getElementById(`hi-panel-${item.id}`);
+            toggleHistoryEditPanel(item.id, item, false);
+            if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+          };
+        }
+        div.querySelector('.hi-edit-btn').onclick = () => toggleHistoryEditPanel(item.id, item);
+        div.querySelector('.hi-save-edit-btn').onclick = () => saveHistoryMetadata(item.id);
+        div.querySelector('.hi-close-edit-btn').onclick = () => toggleHistoryEditPanel(item.id, item, false);
         div.querySelector('.history-remove-btn').onclick = () => removeHistory(item.id);
-        div.querySelector('.hi-dl-btn').onclick = () => addChapters(item, div);
+        if (mergeBtn) {
+          mergeBtn.onclick = () => addChapters(item, div);
+        }
+        div.querySelector(`#hi-edit-author-${item.id}`)?.addEventListener('input', (event) => {
+          const coverValue = document.getElementById(`hi-edit-cover-url-${item.id}`)?.value.trim() || '';
+          updateHistoryEditPreview(item.id, item.title, event.target.value.trim(), coverValue);
+        });
+        div.querySelector(`#hi-edit-cover-url-${item.id}`)?.addEventListener('input', (event) => {
+          const authorValue = document.getElementById(`hi-edit-author-${item.id}`)?.value.trim() || '';
+          updateHistoryEditPreview(item.id, item.title, authorValue, event.target.value.trim());
+        });
+        updateHistoryEditPreview(item.id, item.title, item.author || '', item.cover_url || '');
 
         return div;
       }
@@ -1619,14 +1865,112 @@
       }
 
       // ── main fetch info ──
+      let seriesSource = '';
       let seriesId = null;
       let totalChapters = 0;
+      let firstChapter = 1;
+      let chapterCount = 0;
       let seriesTitle = '';
       let seriesAuthor = '';
       let seriesDescription = '';
       let seriesCoverUrl = '';
       let seriesUrl = '';
       let mainDownloading = false;
+
+      function buildDownloadParams({ seriesId, source, fromCh, toCh, delay, title, author, description, coverUrl, url }) {
+        return {
+          source,
+          series_id: seriesId,
+          from_ch: fromCh,
+          to_ch: toCh,
+          delay,
+          title,
+          author,
+          description,
+          cover_url: coverUrl,
+          url,
+        };
+      }
+
+      async function convertPdf() {
+        const fileInput = document.getElementById('pdf-file');
+        const titleInput = document.getElementById('pdf-title');
+        const authorInput = document.getElementById('pdf-author');
+        const coverInput = document.getElementById('pdf-cover-url');
+        const statusEl = document.getElementById('pdf-status');
+        const btn = document.getElementById('pdf-convert-btn');
+        const file = fileInput?.files?.[0];
+
+        if (!file) {
+          setEl(statusEl, 'choose a .pdf file first', 'error');
+          return;
+        }
+        if (!/\.pdf$/i.test(file.name)) {
+          setEl(statusEl, 'please choose a .pdf file', 'error');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'converting…';
+        setEl(statusEl, 'uploading pdf to your local server…');
+
+        try {
+          const title = titleInput?.value.trim() || '';
+          const author = authorInput?.value.trim() || '';
+          const coverUrl = coverInput?.value.trim() || '';
+          const formData = new FormData();
+          formData.append('file', file);
+          if (title) formData.append('title', title);
+          if (author) formData.append('author', author);
+          if (coverUrl) formData.append('cover_url', coverUrl);
+
+          const res = await fetch(`${SERVER}/convert-pdf`, {
+            method: 'POST',
+            body: formData,
+          });
+          const raw = await res.text();
+          if (!res.ok) throw new Error(raw || 'pdf conversion failed');
+
+          const data = JSON.parse(raw);
+          if (titleInput) titleInput.value = data.title || getPdfFallbackTitle();
+          if (authorInput) authorInput.value = data.author || '';
+          updatePdfCoverPreview(coverUrl);
+
+          const pageCount = Number(data.page_count) || 0;
+          const chapterCount = Number(data.chapter_count) || 0;
+          const summaryBits = [];
+          if (pageCount) summaryBits.push(`${pageCount} page${pageCount === 1 ? '' : 's'}`);
+          if (chapterCount) summaryBits.push(`${chapterCount} section${chapterCount === 1 ? '' : 's'}`);
+          const summary = summaryBits.length ? ` · ${summaryBits.join(' · ')}` : '';
+          setEl(statusEl, `saved to ${data.path}${summary}`, 'success');
+
+          saveToHistory({
+            id: generateId(),
+            source: 'pdf',
+            series_id: '',
+            title: data.title || getPdfFallbackTitle(),
+            author: data.author || '',
+            description: '',
+            cover_url: coverUrl,
+            url: '',
+            from_ch: 1,
+            to_ch: Math.max(chapterCount, 1),
+            page_count: pageCount,
+            chapter_count: chapterCount,
+            date: new Date().toISOString(),
+            path: data.path,
+          });
+        } catch (e) {
+          const message = e?.message || 'pdf conversion failed';
+          const friendly = /Failed to fetch|NetworkError/i.test(message)
+            ? getServerStartHelp()
+            : message;
+          setEl(statusEl, friendly, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'convert pdf';
+        }
+      }
 
       async function fetchInfo() {
         const url = document.getElementById('url').value.trim();
@@ -1648,22 +1992,30 @@
           if (!res.ok) throw new Error(await res.text());
           const data = await res.json();
 
+          seriesSource = data.source || '';
           seriesId = data.series_id;
           totalChapters = data.total_chapters;
+          firstChapter = Number.isFinite(Number(data.min_chapter)) ? Number(data.min_chapter) : 1;
+          chapterCount = Number.isFinite(Number(data.chapter_count)) ? Number(data.chapter_count) : totalChapters;
           seriesTitle = data.title;
           seriesAuthor = data.author || '';
           seriesDescription = data.description || '';
           seriesCoverUrl = data.cover_url || '';
-          seriesUrl = url;
+          seriesUrl = data.series_url || url;
 
           const info = document.getElementById('series-info');
-          info.textContent = `${data.title}${data.author ? ' · by ' + data.author : ''} · ${data.total_chapters} chapters`;
+          const rangeNote = totalChapters && firstChapter > 1 ? ` · ch ${firstChapter}–${totalChapters}` : '';
+          const countLabel = chapterCount
+            ? `${chapterCount} chapter${chapterCount === 1 ? '' : 's'}`
+            : `${data.total_chapters} chapters`;
+          info.textContent = `${data.title}${data.author ? ' · by ' + data.author : ''} · ${countLabel}${rangeNote}`;
           info.classList.add('visible');
           document.getElementById('metadata-fields').style.display = 'block';
           document.getElementById('author').value = seriesAuthor;
           document.getElementById('cover-url').value = seriesCoverUrl;
           updateCoverPreview(seriesCoverUrl);
 
+          document.getElementById('from-ch').value = firstChapter || 1;
           document.getElementById('to-ch').value = data.total_chapters;
           document.getElementById('download-card').style.display = 'block';
           setEl(fetchStatusEl, 'ready to download', 'success');
@@ -1681,8 +2033,8 @@
 
       // ── main download ──
       async function startDownload() {
-        if (!seriesId || mainDownloading) return;
-        const fromCh = parseInt(document.getElementById('from-ch').value) || 1;
+        if (!seriesId || !seriesSource || mainDownloading) return;
+        const fromCh = parseInt(document.getElementById('from-ch').value) || firstChapter || 1;
         const toCh = parseInt(document.getElementById('to-ch').value) || totalChapters;
         const delay = parseFloat(document.getElementById('delay').value) || 1.0;
         const author = document.getElementById('author').value.trim();
@@ -1701,16 +2053,18 @@
         logEl.innerHTML = '';
 
         await streamDownload(
-          {
-            series_id: seriesId,
-            from_ch: fromCh,
-            to_ch: toCh,
+          buildDownloadParams({
+            seriesId,
+            source: seriesSource,
+            fromCh,
+            toCh,
             delay,
             title: seriesTitle,
             author,
             description: seriesDescription,
-            cover_url: coverUrl,
-          },
+            coverUrl,
+            url: seriesUrl,
+          }),
           {
             progressWrap: document.getElementById('main-progress'),
             fillEl: document.getElementById('main-progress-fill'),
@@ -1723,6 +2077,7 @@
           (msg) => {
             saveToHistory({
               id: generateId(),
+              source: seriesSource,
               series_id: seriesId,
               title: seriesTitle,
               author,
@@ -1753,16 +2108,18 @@
         opEl.style.display = 'block';
 
         await streamDownload(
-          {
-            series_id: item.series_id,
-            from_ch: item.from_ch,
-            to_ch: item.to_ch,
+          buildDownloadParams({
+            seriesId: item.series_id,
+            source: item.source || (seriesIdLooksNumeric(item.series_id) ? 'readhive' : ''),
+            fromCh: item.from_ch,
+            toCh: item.to_ch,
             delay: 1.0,
             title: item.title,
             author: item.author || '',
             description: item.description || '',
-            cover_url: item.cover_url || '',
-          },
+            coverUrl: item.cover_url || '',
+            url: item.url || '',
+          }),
           {
             progressWrap: opEl,
             fillEl: document.getElementById(`hi-op-fill-${item.id}`),
@@ -1820,6 +2177,7 @@
         }
 
         const params = {
+          source: item.source || (seriesIdLooksNumeric(item.series_id) ? 'readhive' : ''),
           series_id: item.series_id,
           from_ch: fromCh,
           to_ch: toCh,
@@ -1828,6 +2186,7 @@
           author: item.author || '',
           description: item.description || '',
           cover_url: item.cover_url || '',
+          url: item.url || '',
         };
         if (doMerge) {
           params.merge_path = item.path;
@@ -1859,6 +2218,7 @@
           } else {
             saveToHistory({
               id: generateId(),
+              source: item.source || (seriesIdLooksNumeric(item.series_id) ? 'readhive' : ''),
               series_id: item.series_id,
               title: item.title,
               author: item.author,
@@ -1909,9 +2269,24 @@
       document.getElementById('cover-url').addEventListener('input', (event) => {
         updateCoverPreview(event.target.value.trim());
       });
+      document.getElementById('pdf-file')?.addEventListener('change', () => {
+        updatePdfSelectionInfo();
+        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
+      });
+      document.getElementById('pdf-title')?.addEventListener('input', () => {
+        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
+      });
+      document.getElementById('pdf-author')?.addEventListener('input', () => {
+        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
+      });
+      document.getElementById('pdf-cover-url')?.addEventListener('input', (event) => {
+        updatePdfCoverPreview(event.target.value.trim());
+      });
       window.addEventListener('load', () => {
         initializeCloudSync();
         refreshServerCommandUi();
+        updatePdfSelectionInfo();
+        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
         window.WishlistCloud?.onAuthChange?.(() => {
           refreshServerCommandUi();
         });
