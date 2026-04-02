@@ -892,8 +892,9 @@
                 <input class="epub-input" type="text" id="manual-history-title" placeholder="the novel title" />
               </div>
               <div class="epub-field">
-                <label class="epub-label" for="manual-history-path">file path</label>
-                <input class="epub-input" type="text" id="manual-history-path" placeholder="/Users/you/Downloads/Novel.epub" />
+                <label class="epub-label" for="manual-history-file">epub file</label>
+                <input class="epub-input" type="file" id="manual-history-file" accept=".epub,application/epub+zip" />
+                <p class="epub-hint">this saves the epub file name in history for reference. the browser does not keep the actual ebook file after a refresh.</p>
               </div>
               <div class="epub-field">
                 <label class="epub-label" for="manual-history-url">source url (optional)</label>
@@ -1111,12 +1112,13 @@
 
       function saveManualHistoryEntry() {
         const titleInput = document.getElementById('manual-history-title');
-        const pathInput = document.getElementById('manual-history-path');
+        const fileInput = document.getElementById('manual-history-file');
         const urlInput = document.getElementById('manual-history-url');
         const statusEl = document.getElementById('manual-history-status');
 
         const title = titleInput?.value.trim() || '';
-        const path = pathInput?.value.trim() || '';
+        const file = fileInput?.files?.[0] || null;
+        const path = file?.name?.trim() || '';
         const url = urlInput?.value.trim() || '';
 
         if (!title) {
@@ -1124,7 +1126,7 @@
           return;
         }
         if (!path) {
-          setEl(statusEl, 'add the epub file path too', 'error');
+          setEl(statusEl, 'choose an .epub file first', 'error');
           return;
         }
 
@@ -1144,7 +1146,7 @@
         });
 
         if (titleInput) titleInput.value = '';
-        if (pathInput) pathInput.value = '';
+        if (fileInput) fileInput.value = '';
         if (urlInput) urlInput.value = '';
         setEl(statusEl, 'saved to history', 'success');
         window.setTimeout(() => {
@@ -1846,6 +1848,13 @@
         let cancelRequested = false;
         let cancelHandled = false;
 
+        const setProgressChromeVisible = (visible) => {
+          if (!progressWrap) return;
+          progressWrap.querySelectorAll('.progress-label, .progress-bar-bg').forEach((node) => {
+            node.style.display = visible ? '' : 'none';
+          });
+        };
+
         const resetCancelButton = () => {
           if (!cancelBtn) return;
           cancelBtn.disabled = false;
@@ -1876,6 +1885,7 @@
         };
 
         if (progressWrap) progressWrap.style.display = 'block';
+        setProgressChromeVisible(true);
         if (logEl) { logEl.innerHTML = ''; logEl.classList.add('visible'); }
         if (cancelBtn) {
           cancelBtn.disabled = false;
@@ -1923,6 +1933,7 @@
                   if (onDone) onDone(msg);
                 } else if (msg.type === 'cancelled') {
                   cancelHandled = true;
+                  setProgressChromeVisible(false);
                   setEl(statusEl, msg.message);
                   addToLog(logEl, msg.message, 'info');
                   return;
@@ -1934,6 +1945,7 @@
           }
         } catch (e) {
           if (cancelRequested && !cancelHandled) {
+            setProgressChromeVisible(false);
             setEl(statusEl, 'download cancelled');
             addToLog(logEl, 'download cancelled', 'info');
           } else {
