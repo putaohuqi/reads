@@ -29,10 +29,9 @@
       .epub-col-right { display: contents; }
       .epub-card-how { grid-column: 1; grid-row: 1; }
       .epub-card-search { grid-column: 1; grid-row: 2; }
-      .epub-card-pdf { grid-column: 1; grid-row: 3; }
-      .epub-card-details { grid-column: 1; grid-row: 4; }
-      #download-card { grid-column: 1; grid-row: 5; }
-      .epub-card-setup { grid-column: 1; grid-row: 6; }
+      .epub-card-details { grid-column: 1; grid-row: 3; }
+      #download-card { grid-column: 1; grid-row: 4; }
+      .epub-card-setup { grid-column: 1; grid-row: 5; }
       #history-card {
         grid-column: 2;
         grid-row: 1;
@@ -48,7 +47,6 @@
         .epub-card { backdrop-filter: none; }
         .epub-card-how,
         .epub-card-search,
-        .epub-card-pdf,
         .epub-card-details,
         #download-card,
         .epub-card-setup,
@@ -304,9 +302,25 @@
         font-size: 0.82rem;
         color: var(--muted);
       }
+      .source-helper {
+        display: none;
+        margin-top: 14px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--bg);
+      }
+      .source-helper.visible {
+        display: block;
+      }
+      .source-helper-copy {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--muted);
+        line-height: 1.6;
+      }
 
       /* ── series info ── */
-      #pdf-info,
       #series-info {
         display: none;
         background: var(--chip-active-bg);
@@ -318,7 +332,6 @@
         font-weight: 600;
         color: var(--text);
       }
-      #pdf-info.visible,
       #series-info.visible { display: block; }
 
       .cover-preview-wrap {
@@ -529,6 +542,27 @@
       }
 
       /* ── history ── */
+      .history-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .history-head .epub-card-title {
+        margin-bottom: 0;
+      }
+      .history-manual-panel {
+        display: none;
+        margin-bottom: 14px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--bg);
+      }
+      .history-manual-panel.visible {
+        display: block;
+      }
       .history-item {
         padding: 14px 0;
         border-bottom: 1px solid var(--border);
@@ -583,6 +617,10 @@
         align-items: center;
         gap: 8px;
         min-width: 0;
+      }
+      .history-actions.history-actions-manual {
+        grid-template-columns: auto;
+        justify-content: end;
       }
       .history-main-actions {
         display: flex;
@@ -739,45 +777,6 @@
             <div id="search-results" class="source-results"></div>
           </div>
 
-          <!-- PDF TO EPUB -->
-          <div class="epub-card epub-card-pdf">
-            <p class="epub-card-title">pdf to epub</p>
-            <div class="epub-field">
-              <label class="epub-label" for="pdf-file">upload pdf</label>
-              <input class="epub-input" type="file" id="pdf-file" accept="application/pdf,.pdf" />
-              <p class="epub-hint">text-based PDFs work best. scanned image PDFs usually need OCR first.</p>
-            </div>
-            <div id="pdf-info"></div>
-            <div class="epub-row-2">
-              <div class="epub-field">
-                <label class="epub-label" for="pdf-title">book title</label>
-                <input class="epub-input" type="text" id="pdf-title" placeholder="leave blank to use the PDF title" />
-              </div>
-              <div class="epub-field">
-                <label class="epub-label" for="pdf-author">author</label>
-                <input class="epub-input" type="text" id="pdf-author" placeholder="leave blank to use the PDF author" />
-              </div>
-            </div>
-            <div class="epub-field">
-              <label class="epub-label" for="pdf-cover-url">cover image url</label>
-              <input class="epub-input" type="url" id="pdf-cover-url" placeholder="https://..." />
-              <div class="cover-preview-wrap" id="pdf-cover-preview-wrap">
-                <div class="cover-preview-card">
-                  <img class="cover-preview" id="pdf-cover-preview" alt="pdf cover preview" />
-                  <div class="cover-preview-meta">
-                    <p class="cover-preview-title" id="pdf-cover-preview-title"></p>
-                    <p class="cover-preview-author" id="pdf-cover-preview-author"></p>
-                    <p class="cover-preview-note">cover preview for the converted epub</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="epub-btn-row">
-              <button class="add-btn" id="pdf-convert-btn" type="button" onclick="convertPdf()">convert pdf</button>
-            </div>
-            <div id="pdf-status" class="epub-status"></div>
-          </div>
-
           <!-- NOVEL DETAILS -->
           <div class="epub-card epub-card-details">
             <p class="epub-card-title">novel details</p>
@@ -814,6 +813,15 @@
               <button class="add-btn" id="fetch-btn" onclick="fetchInfo()">fetch info</button>
             </div>
             <div id="fetch-status" class="epub-status"></div>
+            <div class="source-helper" id="webtoepub-helper">
+              <p class="source-helper-copy" id="webtoepub-helper-copy"></p>
+              <div class="epub-btn-row">
+                <button class="add-btn" id="webtoepub-open-btn" type="button">open page for WebToEpub</button>
+                <button class="source-link-btn" id="webtoepub-install-btn" type="button">install WebToEpub</button>
+                <button class="source-link-btn" id="webtoepub-github-btn" type="button">github</button>
+              </div>
+              <p class="epub-hint">If you already installed it, open the novel page and click the WebToEpub extension icon. A normal webpage cannot reliably detect whether the extension is installed, so both options stay visible.</p>
+            </div>
           </div>
 
           <!-- DOWNLOAD OPTIONS -->
@@ -874,7 +882,29 @@
         <!-- RIGHT COLUMN: HISTORY -->
         <div class="epub-col-right">
           <div class="epub-card" id="history-card">
-            <p class="epub-card-title">download history</p>
+            <div class="history-head">
+              <p class="epub-card-title">download history</p>
+              <button class="source-link-btn" id="manual-history-toggle" type="button">add external epub</button>
+            </div>
+            <div class="history-manual-panel" id="manual-history-panel">
+              <div class="epub-field">
+                <label class="epub-label" for="manual-history-title">title</label>
+                <input class="epub-input" type="text" id="manual-history-title" placeholder="the novel title" />
+              </div>
+              <div class="epub-field">
+                <label class="epub-label" for="manual-history-path">file path</label>
+                <input class="epub-input" type="text" id="manual-history-path" placeholder="/Users/you/Downloads/Novel.epub" />
+              </div>
+              <div class="epub-field">
+                <label class="epub-label" for="manual-history-url">source url (optional)</label>
+                <input class="epub-input" type="url" id="manual-history-url" placeholder="https://translator-site.example/chapter-1" />
+              </div>
+              <div class="epub-btn-row">
+                <button class="add-btn" id="manual-history-save" type="button">save entry</button>
+                <button class="source-link-btn" id="manual-history-close" type="button">close</button>
+              </div>
+              <div id="manual-history-status" class="epub-status"></div>
+            </div>
             <div id="history-list"></div>
             <p id="history-empty" style="font-size:0.84rem; color:var(--muted); opacity:0.6; margin:0;">your downloads will appear here ♡</p>
           </div>
@@ -924,6 +954,8 @@
       const GENERIC_SERVER_DIR = '/path/to/your/READS';
       const SERVER_START_SUFFIX = 'python3 NOVEL-TO-EPUB/readhive_server.py';
       const NOVELUPDATES_SEARCH_BASE = 'https://www.novelupdates.com/series-finder/?sf=1&sh=';
+      const WEBTOEPUB_CHROME_URL = 'https://chromewebstore.google.com/detail/webtoepub/akiljllkbielkidmammnifcnibaigelm';
+      const WEBTOEPUB_GITHUB_URL = 'https://github.com/dteviot/WebToEpub';
 
       // ── generic helpers ──
       function escapeHtml(str) {
@@ -1018,6 +1050,106 @@
 
       function buildNovelUpdatesSearchUrl(query) {
         return NOVELUPDATES_SEARCH_BASE + encodeURIComponent(query);
+      }
+
+      function detectSourceFromUrl(rawUrl) {
+        try {
+          const parsed = new URL(rawUrl);
+          let host = parsed.hostname.toLowerCase();
+          if (host.startsWith('www.')) host = host.slice(4);
+          if (host.endsWith('readhive.org')) return 'readhive';
+          if (host.endsWith('wordpress.com')) return 'wordpress';
+          if (host.endsWith('novelupdates.com')) return 'novelupdates';
+          if (host.endsWith('webnovel.com')) return 'webnovel';
+          return 'other';
+        } catch {
+          return 'other';
+        }
+      }
+
+      function hideWebToEpubHelper() {
+        const helper = document.getElementById('webtoepub-helper');
+        if (!helper) return;
+        helper.classList.remove('visible');
+      }
+
+      function showWebToEpubHelper(url, source) {
+        const helper = document.getElementById('webtoepub-helper');
+        const copy = document.getElementById('webtoepub-helper-copy');
+        const openBtn = document.getElementById('webtoepub-open-btn');
+        const installBtn = document.getElementById('webtoepub-install-btn');
+        const githubBtn = document.getElementById('webtoepub-github-btn');
+        if (!helper || !copy || !openBtn || !installBtn || !githubBtn || !url) return;
+
+        const sourceName = source === 'webnovel'
+          ? 'Webnovel'
+          : source === 'novelupdates'
+            ? 'Novel Updates'
+            : 'this site';
+        copy.textContent = `${sourceName} is not handled directly here yet. If the chapter page is readable in your browser, WebToEpub may be able to package it for you instead.`;
+
+        openBtn.onclick = () => openSourceLink(url);
+        installBtn.onclick = () => openSourceLink(WEBTOEPUB_CHROME_URL);
+        githubBtn.onclick = () => openSourceLink(WEBTOEPUB_GITHUB_URL);
+        helper.classList.add('visible');
+      }
+
+      function toggleManualHistoryPanel(forceOpen) {
+        const panel = document.getElementById('manual-history-panel');
+        const statusEl = document.getElementById('manual-history-status');
+        if (!panel) return;
+
+        const shouldOpen = typeof forceOpen === 'boolean'
+          ? forceOpen
+          : !panel.classList.contains('visible');
+
+        panel.classList.toggle('visible', shouldOpen);
+        if (!shouldOpen && statusEl) {
+          setEl(statusEl, '');
+        }
+      }
+
+      function saveManualHistoryEntry() {
+        const titleInput = document.getElementById('manual-history-title');
+        const pathInput = document.getElementById('manual-history-path');
+        const urlInput = document.getElementById('manual-history-url');
+        const statusEl = document.getElementById('manual-history-status');
+
+        const title = titleInput?.value.trim() || '';
+        const path = pathInput?.value.trim() || '';
+        const url = urlInput?.value.trim() || '';
+
+        if (!title) {
+          setEl(statusEl, 'add a title first', 'error');
+          return;
+        }
+        if (!path) {
+          setEl(statusEl, 'add the epub file path too', 'error');
+          return;
+        }
+
+        saveToHistory({
+          id: generateId(),
+          source: 'manual',
+          series_id: '',
+          title,
+          author: '',
+          description: '',
+          cover_url: '',
+          url,
+          from_ch: 0,
+          to_ch: 0,
+          date: new Date().toISOString(),
+          path,
+        });
+
+        if (titleInput) titleInput.value = '';
+        if (pathInput) pathInput.value = '';
+        if (urlInput) urlInput.value = '';
+        setEl(statusEl, 'saved to history', 'success');
+        window.setTimeout(() => {
+          toggleManualHistoryPanel(false);
+        }, 700);
       }
 
       function setEl(el, msg, cls = '') {
@@ -1143,64 +1275,6 @@
         };
       }
 
-      function getPdfFallbackTitle() {
-        const explicitTitle = document.getElementById('pdf-title')?.value.trim();
-        if (explicitTitle) return explicitTitle;
-
-        const file = document.getElementById('pdf-file')?.files?.[0];
-        if (file?.name) {
-          return file.name.replace(/\.pdf$/i, '').trim() || 'PDF import';
-        }
-
-        return 'PDF import';
-      }
-
-      function updatePdfSelectionInfo() {
-        const info = document.getElementById('pdf-info');
-        const file = document.getElementById('pdf-file')?.files?.[0];
-        if (!info) return;
-
-        if (!file) {
-          info.textContent = '';
-          info.classList.remove('visible');
-          return;
-        }
-
-        const sizeMb = file.size ? (file.size / (1024 * 1024)).toFixed(file.size >= 1024 * 1024 ? 1 : 2) : '';
-        info.textContent = sizeMb ? `${file.name} · ${sizeMb} MB` : file.name;
-        info.classList.add('visible');
-      }
-
-      function updatePdfCoverPreview(url) {
-        const wrap = document.getElementById('pdf-cover-preview-wrap');
-        const img = document.getElementById('pdf-cover-preview');
-        const titleEl = document.getElementById('pdf-cover-preview-title');
-        const authorEl = document.getElementById('pdf-cover-preview-author');
-        if (!wrap || !img || !titleEl || !authorEl) return;
-
-        titleEl.textContent = getPdfFallbackTitle();
-        const author = document.getElementById('pdf-author')?.value.trim() || '';
-        authorEl.textContent = author ? `by ${author}` : 'author not set';
-
-        if (!url) {
-          img.removeAttribute('src');
-          img.style.display = 'none';
-          wrap.classList.add('visible');
-          return;
-        }
-
-        img.src = getCoverPreviewUrl(url);
-        img.style.display = 'block';
-        wrap.classList.add('visible');
-        img.onerror = () => {
-          img.removeAttribute('src');
-          img.style.display = 'none';
-          authorEl.textContent = author
-            ? `by ${author} · cover preview unavailable`
-            : 'author not set · cover preview unavailable';
-        };
-      }
-
       function toggleHistoryEditPanel(itemId, item, forceOpen) {
         const panel = document.getElementById(`hi-edit-panel-${itemId}`);
         if (!panel) return;
@@ -1241,6 +1315,7 @@
         seriesDescription = '';
         seriesCoverUrl = '';
         seriesUrl = '';
+        hideWebToEpubHelper();
         resetMainDownloadState();
       }
 
@@ -1625,14 +1700,11 @@
         const dateStr = new Date(item.date).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         });
-        const isPdfItem = item.source === 'pdf';
-        const historyMeta = isPdfItem
-          ? [
-              'PDF import',
-              item.page_count ? `${item.page_count} page${item.page_count === 1 ? '' : 's'}` : '',
-              item.chapter_count ? `${item.chapter_count} section${item.chapter_count === 1 ? '' : 's'}` : '',
-              dateStr,
-            ].filter(Boolean).join(' · ')
+        const isManualItem = item.source === 'manual';
+        const supportsDownloadActions = !isManualItem;
+        const supportsMetadataEdit = !isManualItem;
+        const historyMeta = isManualItem
+          ? `external epub · ${dateStr}`
           : `Ch ${item.from_ch}–${item.to_ch} · ${dateStr}`;
 
         const div = document.createElement('div');
@@ -1644,15 +1716,18 @@
             <span class="history-meta">${escapeHtml(historyMeta)}</span>
             <span class="history-path" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</span>
           </div>
-          <div class="history-actions">
+          <div class="history-actions${isManualItem ? ' history-actions-manual' : ''}">
+            ${supportsDownloadActions || supportsMetadataEdit ? `
             <div class="history-main-actions">
-              ${isPdfItem ? '' : '<button class="add-btn hi-redownload-btn">re-download</button>'}
-              ${isPdfItem ? '' : '<button class="epub-btn-secondary hi-cancel-redownload-btn" style="display:none;">cancel</button>'}
-              ${isPdfItem ? '' : '<button class="add-btn hi-addch-btn">+ add chapters</button>'}
-              <button class="source-link-btn hi-edit-btn">edit</button>
+              ${supportsDownloadActions ? '<button class="add-btn hi-redownload-btn">re-download</button>' : ''}
+              ${supportsDownloadActions ? '<button class="epub-btn-secondary hi-cancel-redownload-btn" style="display:none;">cancel</button>' : ''}
+              ${supportsDownloadActions ? '<button class="add-btn hi-addch-btn">+ add chapters</button>' : ''}
+              ${supportsMetadataEdit ? '<button class="source-link-btn hi-edit-btn">edit</button>' : ''}
             </div>
+            ` : ''}
             <button class="history-remove-btn" title="Remove from history">remove</button>
           </div>
+          ${supportsMetadataEdit ? `
           <div class="history-edit-panel" id="hi-edit-panel-${item.id}" style="display:none;">
             <div class="epub-row-2">
               <div class="epub-field">
@@ -1679,7 +1754,8 @@
               <button class="source-link-btn hi-close-edit-btn">close</button>
             </div>
           </div>
-          ${isPdfItem ? '' : `
+          ` : ''}
+          ${supportsDownloadActions ? `
           <div class="history-op" id="hi-op-${item.id}" style="display:none;">
             <div class="progress-label" style="margin-top:10px;">
               <span id="hi-op-text-${item.id}">downloading…</span>
@@ -1739,22 +1815,26 @@
             if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
           };
         }
-        div.querySelector('.hi-edit-btn').onclick = () => toggleHistoryEditPanel(item.id, item);
-        div.querySelector('.hi-save-edit-btn').onclick = () => saveHistoryMetadata(item.id);
-        div.querySelector('.hi-close-edit-btn').onclick = () => toggleHistoryEditPanel(item.id, item, false);
+        if (supportsMetadataEdit) {
+          div.querySelector('.hi-edit-btn').onclick = () => toggleHistoryEditPanel(item.id, item);
+          div.querySelector('.hi-save-edit-btn').onclick = () => saveHistoryMetadata(item.id);
+          div.querySelector('.hi-close-edit-btn').onclick = () => toggleHistoryEditPanel(item.id, item, false);
+        }
         div.querySelector('.history-remove-btn').onclick = () => removeHistory(item.id);
         if (mergeBtn) {
           mergeBtn.onclick = () => addChapters(item, div);
         }
-        div.querySelector(`#hi-edit-author-${item.id}`)?.addEventListener('input', (event) => {
-          const coverValue = document.getElementById(`hi-edit-cover-url-${item.id}`)?.value.trim() || '';
-          updateHistoryEditPreview(item.id, item.title, event.target.value.trim(), coverValue);
-        });
-        div.querySelector(`#hi-edit-cover-url-${item.id}`)?.addEventListener('input', (event) => {
-          const authorValue = document.getElementById(`hi-edit-author-${item.id}`)?.value.trim() || '';
-          updateHistoryEditPreview(item.id, item.title, authorValue, event.target.value.trim());
-        });
-        updateHistoryEditPreview(item.id, item.title, item.author || '', item.cover_url || '');
+        if (supportsMetadataEdit) {
+          div.querySelector(`#hi-edit-author-${item.id}`)?.addEventListener('input', (event) => {
+            const coverValue = document.getElementById(`hi-edit-cover-url-${item.id}`)?.value.trim() || '';
+            updateHistoryEditPreview(item.id, item.title, event.target.value.trim(), coverValue);
+          });
+          div.querySelector(`#hi-edit-cover-url-${item.id}`)?.addEventListener('input', (event) => {
+            const authorValue = document.getElementById(`hi-edit-author-${item.id}`)?.value.trim() || '';
+            updateHistoryEditPreview(item.id, item.title, authorValue, event.target.value.trim());
+          });
+          updateHistoryEditPreview(item.id, item.title, item.author || '', item.cover_url || '');
+        }
 
         return div;
       }
@@ -1892,86 +1972,6 @@
         };
       }
 
-      async function convertPdf() {
-        const fileInput = document.getElementById('pdf-file');
-        const titleInput = document.getElementById('pdf-title');
-        const authorInput = document.getElementById('pdf-author');
-        const coverInput = document.getElementById('pdf-cover-url');
-        const statusEl = document.getElementById('pdf-status');
-        const btn = document.getElementById('pdf-convert-btn');
-        const file = fileInput?.files?.[0];
-
-        if (!file) {
-          setEl(statusEl, 'choose a .pdf file first', 'error');
-          return;
-        }
-        if (!/\.pdf$/i.test(file.name)) {
-          setEl(statusEl, 'please choose a .pdf file', 'error');
-          return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'converting…';
-        setEl(statusEl, 'uploading pdf to your local server…');
-
-        try {
-          const title = titleInput?.value.trim() || '';
-          const author = authorInput?.value.trim() || '';
-          const coverUrl = coverInput?.value.trim() || '';
-          const formData = new FormData();
-          formData.append('file', file);
-          if (title) formData.append('title', title);
-          if (author) formData.append('author', author);
-          if (coverUrl) formData.append('cover_url', coverUrl);
-
-          const res = await fetch(`${SERVER}/convert-pdf`, {
-            method: 'POST',
-            body: formData,
-          });
-          const raw = await res.text();
-          if (!res.ok) throw new Error(raw || 'pdf conversion failed');
-
-          const data = JSON.parse(raw);
-          if (titleInput) titleInput.value = data.title || getPdfFallbackTitle();
-          if (authorInput) authorInput.value = data.author || '';
-          updatePdfCoverPreview(coverUrl);
-
-          const pageCount = Number(data.page_count) || 0;
-          const chapterCount = Number(data.chapter_count) || 0;
-          const summaryBits = [];
-          if (pageCount) summaryBits.push(`${pageCount} page${pageCount === 1 ? '' : 's'}`);
-          if (chapterCount) summaryBits.push(`${chapterCount} section${chapterCount === 1 ? '' : 's'}`);
-          const summary = summaryBits.length ? ` · ${summaryBits.join(' · ')}` : '';
-          setEl(statusEl, `saved to ${data.path}${summary}`, 'success');
-
-          saveToHistory({
-            id: generateId(),
-            source: 'pdf',
-            series_id: '',
-            title: data.title || getPdfFallbackTitle(),
-            author: data.author || '',
-            description: '',
-            cover_url: coverUrl,
-            url: '',
-            from_ch: 1,
-            to_ch: Math.max(chapterCount, 1),
-            page_count: pageCount,
-            chapter_count: chapterCount,
-            date: new Date().toISOString(),
-            path: data.path,
-          });
-        } catch (e) {
-          const message = e?.message || 'pdf conversion failed';
-          const friendly = /Failed to fetch|NetworkError/i.test(message)
-            ? getServerStartHelp()
-            : message;
-          setEl(statusEl, friendly, 'error');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = 'convert pdf';
-        }
-      }
-
       async function fetchInfo() {
         const url = document.getElementById('url').value.trim();
         const fetchStatusEl = document.getElementById('fetch-status');
@@ -2019,12 +2019,20 @@
           document.getElementById('to-ch').value = data.total_chapters;
           document.getElementById('download-card').style.display = 'block';
           setEl(fetchStatusEl, 'ready to download', 'success');
+          hideWebToEpubHelper();
         } catch (e) {
           const message = e?.message || '';
           const friendly = /Failed to fetch|NetworkError/i.test(message)
             ? getServerStartHelp()
             : message || 'could not fetch info for this url';
+          const detectedSource = detectSourceFromUrl(url);
+          const shouldShowHelper = detectedSource !== 'readhive'
+            && detectedSource !== 'wordpress'
+            && detectedSource !== 'novelupdates'
+            && !/Failed to fetch|NetworkError/i.test(message);
           setEl(fetchStatusEl, friendly, 'error');
+          if (shouldShowHelper) showWebToEpubHelper(url, detectedSource);
+          else hideWebToEpubHelper();
         } finally {
           fetchBtn.disabled = false;
           fetchBtn.textContent = 'fetch info';
@@ -2269,24 +2277,19 @@
       document.getElementById('cover-url').addEventListener('input', (event) => {
         updateCoverPreview(event.target.value.trim());
       });
-      document.getElementById('pdf-file')?.addEventListener('change', () => {
-        updatePdfSelectionInfo();
-        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
+      document.getElementById('manual-history-toggle')?.addEventListener('click', () => {
+        toggleManualHistoryPanel();
       });
-      document.getElementById('pdf-title')?.addEventListener('input', () => {
-        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
+      document.getElementById('manual-history-close')?.addEventListener('click', () => {
+        toggleManualHistoryPanel(false);
       });
-      document.getElementById('pdf-author')?.addEventListener('input', () => {
-        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
-      });
-      document.getElementById('pdf-cover-url')?.addEventListener('input', (event) => {
-        updatePdfCoverPreview(event.target.value.trim());
+      document.getElementById('manual-history-save')?.addEventListener('click', () => {
+        saveManualHistoryEntry();
       });
       window.addEventListener('load', () => {
         initializeCloudSync();
         refreshServerCommandUi();
-        updatePdfSelectionInfo();
-        updatePdfCoverPreview(document.getElementById('pdf-cover-url')?.value.trim() || '');
+        hideWebToEpubHelper();
         window.WishlistCloud?.onAuthChange?.(() => {
           refreshServerCommandUi();
         });

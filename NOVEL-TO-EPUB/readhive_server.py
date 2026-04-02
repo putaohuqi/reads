@@ -15,7 +15,6 @@ import threading
 import time
 import uuid
 from html import escape
-from io import BytesIO
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
@@ -24,14 +23,6 @@ from bs4 import BeautifulSoup
 from ebooklib import epub
 from flask import Flask, Response, request
 from flask_cors import CORS
-
-try:
-    from pypdf import PdfReader
-except Exception:
-    try:
-        from PyPDF2 import PdfReader  # type: ignore
-    except Exception:
-        PdfReader = None  # type: ignore
 
 app = Flask(__name__)
 CORS(app)
@@ -53,11 +44,6 @@ HEADERS = {
 
 WORDPRESS_CATEGORY_SEGMENT = "/category/"
 WORDPRESS_CHAPTER_RE = re.compile(r"\bchapter\W*(\d+)\b", re.I)
-PDF_HEADING_RE = re.compile(
-    r"^(?:chapter|chap\.?|ch\.?)\s*\d+(?:\.\d+)*\b.*$|"
-    r"^(?:prologue|epilogue|afterword|interlude|side story|extra|appendix)\b.*$",
-    re.I,
-)
 
 
 def detect_source(url: str) -> str:
@@ -516,170 +502,6 @@ def fetch_wordpress_chapter(chapter_url: str) -> tuple[str, str]:
 
     return chapter_title, html
 
-
-def ensure_pdf_support() -> None:
-    if PdfReader is None:
-        raise RuntimeError(
-            "pdf conversion needs pypdf. run pip3 install -r NOVEL-TO-EPUB/requirements.txt "
-            "and restart the local server."
-        )
-
-
-def get_pdf_metadata_value(metadata, *keys: str) -> str:
-    if not metadata:
-        return ""
-    for key in keys:
-        try:
-            value = metadata.get(key)
-        except Exception:
-            value = getattr(metadata, key, None)
-        if value:
-            return str(value).strip()
-    return ""
-
-
-def normalize_pdf_text(text: str) -> str:
-    if not text:
-        return ""
-    text = text.replace("\r", "\n").replace("\xa0", " ")
-    text = re.sub(r"-\n(?=[a-z])", "", text)
-    text = re.sub(r"[ \t]+\n", "\n", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-    return text.strip()
-
-
-def pdf_text_to_html(text: str) -> str:
-    normalized = normalize_pdf_text(text)
-    if not normalized:
-        return "<p>Content not found.</p>"
-
-    blocks = re.split(r"\n\s*\n", normalized)
-    parts: list[str] = []
-    for block in blocks:
-        lines = [line.strip() for line in block.splitlines() if line.strip()]
-        if not lines:
-            continue
-        if len(lines) == 1 and lines[0].isdigit():
-            continue
-        paragraph = " ".join(lines)
-        parts.append(f"<p>{escape(paragraph)}</p>")
-
-    return "".join(parts) or "<p>Content not found.</p>"
-
-
-def iter_pdf_outline_items(items):
-    for item in items or []:
-        if isinstance(item, list):
-            yield from iter_pdf_outline_items(item)
-        else:
-            yield item
-
-
-def extract_pdf_outline_entries(reader) -> list[tuple[str, int]]:
-    outline = getattr(reader, "outline", None)
-    if not outline:
-        return []
-
-    entries: list[tuple[str, int]] = []
-    for item in iter_pdf_outline_items(outline):
-        title = clean_text_html(getattr(item, "title", ""))
-        if not title:
-            continue
-        try:
-            page_index = int(reader.get_destination_page_number(item))
-        except Exception:
-            continue
-        entries.append((title, page_index))
-
-    entries.sort(key=lambda entry: entry[1])
-    deduped: list[tuple[str, int]] = []
-    last_page = None
-    for title, page_index in entries:
-        if page_index == last_page:
-            continue
-        deduped.append((title, page_index))
-        last_page = page_index
-    return deduped
-
-
-def build_pdf_outline_chapters(page_texts: list[str], outline_entries: list[tuple[str, int]]) -> list[tuple[str, str]]:
-    chapters: list[tuple[str, str]] = []
-    total_pages = len(page_texts)
-
-    for index, (title, start_page) in enumerate(outline_entries):
-        if start_page < 0 or start_page >= total_pages:
-            continue
-        end_page = outline_entries[index + 1][1] if index + 1 < len(outline_entries) else total_pages
-        section_text = "\n\n".join(page_texts[start_page:end_page]).strip()
-        html = pdf_text_to_html(section_text)
-        if "Content not found" in html:
-            continue
-        chapters.append((title[:200], html))
-
-    return chapters
-
-
-def build_pdf_heading_chapters(page_texts: list[str], fallback_title: str) -> list[tuple[str, str]]:
-    joined = "\n\n".join(text for text in page_texts if text.strip())
-    if not joined:
-        return []
-
-    chapters: list[tuple[str, str]] = []
-    current_title = ""
-    current_lines: list[str] = []
-
-    def flush_current() -> None:
-        nonlocal current_title, current_lines
-        content = "\n".join(current_lines).strip()
-        if not content:
-            current_lines = []
-            return
-        html = pdf_text_to_html(content)
-        if "Content not found" not in html:
-            chapters.append((current_title or fallback_title, html))
-        current_lines = []
-
-    for raw_line in joined.splitlines():
-        line = raw_line.strip()
-        if line and len(line) <= 140 and PDF_HEADING_RE.match(line):
-            if current_lines:
-                flush_current()
-            current_title = line
-            current_lines = []
-            continue
-        current_lines.append(raw_line)
-
-    if current_lines:
-        flush_current()
-
-    return chapters if len(chapters) >= 2 else []
-
-
-def extract_pdf_content(pdf_bytes: bytes, fallback_title: str) -> tuple[list[tuple[str, str]], str, str, int]:
-    ensure_pdf_support()
-
-    reader = PdfReader(BytesIO(pdf_bytes))
-    metadata = getattr(reader, "metadata", None)
-    meta_title = get_pdf_metadata_value(metadata, "/Title", "title")
-    meta_author = get_pdf_metadata_value(metadata, "/Author", "author")
-
-    page_texts = [normalize_pdf_text(page.extract_text() or "") for page in reader.pages]
-    page_count = len(page_texts)
-    if not any(text.strip() for text in page_texts):
-        raise RuntimeError(
-            "no text was found in this pdf. it may be a scanned/image pdf and need OCR first."
-        )
-
-    outline_entries = extract_pdf_outline_entries(reader)
-    chapters = build_pdf_outline_chapters(page_texts, outline_entries) if outline_entries else []
-    if not chapters:
-        chapters = build_pdf_heading_chapters(page_texts, meta_title or fallback_title)
-    if not chapters:
-        chapters = [(meta_title or fallback_title or "PDF import", pdf_text_to_html("\n\n".join(page_texts)))]
-
-    return chapters, meta_title, meta_author, page_count
-
-
 # ─── EPUB helpers ─────────────────────────────────────────────────────────────
 
 def get_epub_metadata_value(book: epub.EpubBook, namespace: str, name: str) -> str:
@@ -889,52 +711,6 @@ def route_cover_preview():
     preview = Response(response.content, mimetype=content_type)
     preview.headers["Cache-Control"] = "public, max-age=3600"
     return preview
-
-
-@app.post("/convert-pdf")
-def route_convert_pdf():
-    pdf_file = request.files.get("file")
-    if pdf_file is None:
-        return "missing pdf file", 400
-
-    filename = str(pdf_file.filename or "").strip()
-    if not filename.lower().endswith(".pdf"):
-        return "please upload a .pdf file", 400
-
-    pdf_bytes = pdf_file.read()
-    if not pdf_bytes:
-        return "uploaded pdf was empty", 400
-
-    title = str(request.form.get("title", "")).strip()
-    author = str(request.form.get("author", "")).strip()
-    description = str(request.form.get("description", "")).strip()
-    cover_url = str(request.form.get("cover_url", "")).strip()
-    fallback_title = Path(filename).stem.strip() or "PDF import"
-
-    try:
-        chapters, meta_title, meta_author, page_count = extract_pdf_content(pdf_bytes, fallback_title)
-    except Exception as e:
-        return str(e), 400
-
-    final_title = title or meta_title or fallback_title
-    final_author = author or meta_author
-    safe_title = re.sub(r'[\\/*?:"<>|]', "_", final_title)
-    output_path = str(Path.home() / "Desktop" / f"{safe_title}.epub")
-
-    try:
-        build_epub(final_title, final_author, description, cover_url, chapters, output_path)
-    except Exception as e:
-        return str(e), 502
-
-    return {
-        "ok": True,
-        "path": output_path,
-        "title": final_title,
-        "author": final_author,
-        "page_count": page_count,
-        "chapter_count": len(chapters),
-    }
-
 
 @app.post("/download")
 def route_download():
