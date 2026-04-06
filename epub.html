@@ -23,32 +23,40 @@
         display: grid;
         grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
         gap: 18px;
-        align-items: start;
+        align-items: stretch;
       }
       .epub-col-left {
         min-width: 0;
         display: grid;
+        grid-auto-rows: max-content;
         gap: 18px;
+        align-content: start;
+      }
+      .epub-col-left > .epub-card {
+        align-self: start;
       }
       .epub-col-right {
         min-width: 0;
+        display: flex;
+        align-self: stretch;
       }
       #history-card {
-        position: sticky;
-        top: 20px;
-        max-height: min(280px, calc(100vh - 40px));
+        position: static;
+        flex: 1 1 auto;
+        min-height: 100%;
         display: flex;
         flex-direction: column;
-      }
-      #history-card.history-card-expanded {
-        max-height: none;
       }
       @media (max-width: 900px) {
         .epub-grid { grid-template-columns: 1fr; }
         .epub-card { backdrop-filter: none; }
+        .epub-col-right {
+          display: block;
+          align-self: auto;
+        }
         #history-card {
           position: static;
-          max-height: none;
+          min-height: 0;
           display: block;
         }
         .epub-row-2,
@@ -648,18 +656,12 @@
       #history-card {
         overflow: hidden;
       }
-      #history-card.history-card-expanded {
-        overflow: visible;
-      }
       #history-list {
         flex: 1 1 auto;
         min-height: 0;
         min-width: 0;
         width: 100%;
         overflow: auto;
-      }
-      #history-card.history-card-expanded #history-list {
-        overflow: visible;
       }
 
       @media (max-width: 980px) {
