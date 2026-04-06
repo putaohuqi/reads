@@ -20,24 +20,20 @@
       /* ── epub layout ── */
       .epub-grid {
         margin-top: 24px;
-        display: grid;
-        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        display: flex;
         gap: 18px;
         align-items: stretch;
       }
       .epub-col-left {
+        flex: 3;
         min-width: 0;
-        display: grid;
-        grid-auto-rows: max-content;
+        display: flex;
+        flex-direction: column;
         gap: 18px;
-        align-content: start;
-      }
-      .epub-col-left > .epub-card {
-        align-self: start;
       }
       .epub-col-right {
+        flex: 2;
         min-width: 0;
-        height: 100%;
         display: flex;
         flex-direction: column;
       }
@@ -49,14 +45,13 @@
         overflow: hidden;
       }
       @media (max-width: 900px) {
-        .epub-grid { grid-template-columns: 1fr; }
+        .epub-grid { flex-direction: column; }
         .epub-card { backdrop-filter: none; }
         .epub-col-right {
-          display: block;
-          align-self: auto;
+          flex: none;
         }
         #history-card {
-          position: static;
+          flex: none;
           min-height: 0;
           display: block;
         }
