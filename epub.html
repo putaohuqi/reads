@@ -37,11 +37,12 @@
       }
       .epub-col-right {
         min-width: 0;
+        display: flex;
+        flex-direction: column;
       }
       #history-card {
-        position: sticky;
-        top: 20px;
-        max-height: calc(100vh - 40px);
+        flex: 1;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
