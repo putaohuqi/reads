@@ -4,6 +4,7 @@ const MAX_UPLOAD_BYTES = 1200 * 1024;
 const SERIES_TYPES = ["manhwa", "manga", "manhua"];
 const SERIES_GENRES = [
   "bl",
+  "gl",
   "romance-fantasy",
   "action",
   "romance",
@@ -29,6 +30,7 @@ const TYPE_LABELS = {
 };
 const GENRE_LABELS = {
   bl: "BL",
+  gl: "GL",
   "romance-fantasy": "romance fantasy",
   action: "action",
   romance: "romance",
