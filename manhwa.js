@@ -7,7 +7,6 @@ const STATUSES = ["reading", "want-to-read", "completed"];
 const SERIES_TYPES = ["manhwa", "manga", "manhua"];
 const SERIES_GENRES = [
   "bl",
-  "gl",
   "romance-fantasy",
   "action",
   "romance",
@@ -38,7 +37,6 @@ const TYPE_LABELS = {
 };
 const GENRE_LABELS = {
   bl: "BL",
-  gl: "GL",
   "romance-fantasy": "romance fantasy",
   action: "action",
   romance: "romance",
