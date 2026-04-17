@@ -1696,24 +1696,33 @@ function buildNotesExportPayload(items) {
       return status !== "completed" && status !== "want-to-read";
     })
   );
+  const wantItems = sortSectionItems(activeItems.filter((item) => normalizeStatus(item.status) === "want-to-read"));
   const completedItems = sortSectionItems(activeItems.filter((item) => normalizeStatus(item.status) === "completed"));
 
   const ongoingLines = ongoingItems.map(formatOngoingNotesLine);
+  const wantLines = wantItems.map(formatWantToReadNotesLine);
   const completedLines = completedItems.map(formatCompletedNotesLine);
 
   const plainText = [
     "ongoing reads:",
     ...ongoingLines,
     "",
+    "want to read:",
+    ...wantLines,
+    "",
     "completed reads:",
     ...completedLines
   ].join("\n");
 
   const ongoingBodyHtml = (ongoingLines.length ? ongoingLines : ["none yet"]).map(escapeHtml).join("<br />");
+  const wantBodyHtml = (wantLines.length ? wantLines : ["none yet"]).map(escapeHtml).join("<br />");
   const completedBodyHtml = (completedLines.length ? completedLines : ["none yet"]).map(escapeHtml).join("<br />");
   const html = `
     <h2 style="margin:0 0 6px 0;">ongoing reads:</h2>
     <p style="margin:0;">${ongoingBodyHtml}</p>
+    <br />
+    <h2 style="margin:0 0 6px 0;">want to read:</h2>
+    <p style="margin:0;">${wantBodyHtml}</p>
     <br />
     <h2 style="margin:0 0 6px 0;">completed reads:</h2>
     <p style="margin:0;">${completedBodyHtml}</p>
@@ -1727,6 +1736,11 @@ function formatOngoingNotesLine(item) {
   const chapterPart = /^chapter\b/i.test(chapter) ? chapter : chapter ? `chapter ${chapter}` : "chapter ?";
   const source = extractSourceLabel(item.url);
   return `${item.title} (${chapterPart}; ${source})`;
+}
+
+function formatWantToReadNotesLine(item) {
+  const source = extractSourceLabel(item.url);
+  return `${item.title} (${source})`;
 }
 
 function formatCompletedNotesLine(item) {
