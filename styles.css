@@ -242,9 +242,9 @@ h1 {
 
 .tool-row-secondary {
   margin-top: 8px;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 18px;
-  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .taxonomy-group {
