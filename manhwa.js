@@ -51,6 +51,7 @@ const GENRE_LABELS = {
 };
 
 const accentCache = new Map();
+let _cachedGenreKey = "";
 
 const state = {
   items: loadItems(),
@@ -923,8 +924,6 @@ function setActiveGenreFilterButton() {
     button.classList.toggle("is-active", button.dataset.genreFilter === state.genreFilter);
   });
 }
-
-let _cachedGenreKey = "";
 
 function buildGenreFilters() {
   const dataGenres = new Set();
