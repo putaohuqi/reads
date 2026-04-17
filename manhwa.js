@@ -946,7 +946,7 @@ function buildGenreFilters() {
     btn.dataset.genreFilter = slug;
     btn.textContent = genreDisplayLabel(slug);
     btn.addEventListener("click", handleGenreFilterChange);
-    refs.genreFilterWrap.appendChild(btn);
+    refs.genreFilterWrap.insertBefore(btn, refs.genreAddBtn);
   }
   refs.genreFilters = Array.from(refs.genreFilterWrap.querySelectorAll("[data-genre-filter]"));
 

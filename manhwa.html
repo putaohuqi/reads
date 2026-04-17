@@ -86,13 +86,13 @@
             <p class="taxonomy-label">genre</p>
             <div id="genre-filters" class="taxonomy-filters" aria-label="Genre filters">
               <button type="button" class="chip is-active" data-genre-filter="all">all genres</button>
+              <button type="button" id="genre-add-btn" class="chip chip--add" title="Add genre">+</button>
+              <span id="genre-add-row" class="genre-add-row" hidden>
+                <input id="genre-add-input" type="text" class="genre-add-input" placeholder="genre name" maxlength="40" autocomplete="off" />
+                <button type="button" id="genre-add-confirm" class="genre-add-confirm">add</button>
+                <button type="button" id="genre-add-cancel" class="genre-add-cancel">cancel</button>
+              </span>
             </div>
-            <span id="genre-add-row" class="genre-add-row" hidden>
-              <input id="genre-add-input" type="text" class="genre-add-input" placeholder="genre name" maxlength="40" autocomplete="off" />
-              <button type="button" id="genre-add-confirm" class="genre-add-confirm">add</button>
-              <button type="button" id="genre-add-cancel" class="genre-add-cancel">cancel</button>
-            </span>
-            <button type="button" id="genre-add-btn" class="chip chip--add" title="Add genre">+</button>
           </div>
         </div>
       </header>
