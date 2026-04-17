@@ -14,19 +14,19 @@
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
-    <link rel="shortcut icon" href="favicon.svg" />
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/icon-512.png" />
+    <link rel="shortcut icon" href="assets/icons/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260331-1" />
+    <link rel="stylesheet" href="styles.css?v=20260417-1" />
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" defer></script>
     <script src="firebase-config.js?v=20260303-2" defer></script>
     <script src="auth-sync.js?v=20260303-2" defer></script>
-    <script src="manhwa.js?v=20260304-1" defer></script>
+    <script src="manhwa.js?v=20260417-1" defer></script>
     <script src="back-to-top.js?v=20260331-1" defer></script>
   </head>
   <body>
@@ -84,20 +84,15 @@
 
           <div class="taxonomy-group">
             <p class="taxonomy-label">genre</p>
-            <div class="taxonomy-filters" aria-label="Genre filters">
+            <div id="genre-filters" class="taxonomy-filters" aria-label="Genre filters">
               <button type="button" class="chip is-active" data-genre-filter="all">all genres</button>
-              <button type="button" class="chip" data-genre-filter="bl">BL</button>
-              <button type="button" class="chip" data-genre-filter="romance-fantasy">romance fantasy</button>
-              <button type="button" class="chip" data-genre-filter="action">action</button>
-              <button type="button" class="chip" data-genre-filter="romance">romance</button>
-              <button type="button" class="chip" data-genre-filter="drama">drama</button>
-              <button type="button" class="chip" data-genre-filter="comedy">comedy</button>
-              <button type="button" class="chip" data-genre-filter="academy">academy</button>
-              <button type="button" class="chip" data-genre-filter="idol">idol</button>
-              <button type="button" class="chip" data-genre-filter="slice-of-life">slice of life</button>
-              <button type="button" class="chip" data-genre-filter="horror">horror</button>
-              <button type="button" class="chip" data-genre-filter="revenge">revenge</button>
             </div>
+            <span id="genre-add-row" class="genre-add-row" hidden>
+              <input id="genre-add-input" type="text" class="genre-add-input" placeholder="genre name" maxlength="40" autocomplete="off" />
+              <button type="button" id="genre-add-confirm" class="genre-add-confirm">add</button>
+              <button type="button" id="genre-add-cancel" class="genre-add-cancel">cancel</button>
+            </span>
+            <button type="button" id="genre-add-btn" class="chip chip--add" title="Add genre">+</button>
           </div>
         </div>
       </header>
@@ -242,17 +237,6 @@
               <label for="series-genre">Genre</label>
               <select id="series-genre" name="genre">
                 <option value="" selected>select</option>
-                <option value="bl">BL</option>
-                <option value="romance-fantasy">romance fantasy</option>
-                <option value="action">action</option>
-                <option value="romance">romance</option>
-                <option value="drama">drama</option>
-                <option value="comedy">comedy</option>
-                <option value="academy">academy</option>
-                <option value="idol">idol</option>
-                <option value="slice-of-life">slice of life</option>
-                <option value="horror">horror</option>
-                <option value="revenge">revenge</option>
               </select>
             </div>
 

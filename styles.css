@@ -272,6 +272,63 @@ h1 {
   font-size: 0.82rem;
 }
 
+.chip--add {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.chip--add:hover {
+  opacity: 1;
+}
+
+.genre-add-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.genre-add-row[hidden] {
+  display: none;
+}
+
+.genre-add-input {
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  color: var(--text);
+  padding: 0 10px;
+  font-size: 0.82rem;
+  width: 140px;
+}
+
+.genre-add-confirm,
+.genre-add-cancel {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.genre-add-confirm:hover {
+  border-color: var(--blue-4);
+  background: var(--blue-6);
+  color: var(--text);
+}
+
+.genre-add-cancel:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
 .search-wrap {
   flex: 1;
 }

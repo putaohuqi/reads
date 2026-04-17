@@ -1,4 +1,5 @@
 const STORAGE_KEY = "manhwa-items-v1";
+const GENRES_STORAGE_KEY = "manhwa-genres-v1";
 const CLOUD_LIST_ID = "manhwa";
 const COLOR_SAMPLE_SIZE = 24;
 const MAX_UPLOAD_BYTES = 1200 * 1024;
@@ -53,6 +54,7 @@ const accentCache = new Map();
 
 const state = {
   items: loadItems(),
+  userGenres: loadUserGenres(),
   filter: "all",
   typeFilter: "all",
   genreFilter: "all",
@@ -92,6 +94,13 @@ const refs = {
   filters: Array.from(document.querySelectorAll("[data-filter]")),
   typeFilters: Array.from(document.querySelectorAll("[data-type-filter]")),
   genreFilters: Array.from(document.querySelectorAll("[data-genre-filter]")),
+  genreFilterWrap: document.getElementById("genre-filters"),
+  genreAddBtn: document.getElementById("genre-add-btn"),
+  genreAddRow: document.getElementById("genre-add-row"),
+  genreAddInput: document.getElementById("genre-add-input"),
+  genreAddConfirm: document.getElementById("genre-add-confirm"),
+  genreAddCancel: document.getElementById("genre-add-cancel"),
+  genreSelect: document.getElementById("series-genre"),
   stats: document.getElementById("header-stats"),
   openAdd: document.getElementById("open-add"),
   exportNotes: document.getElementById("export-notes"),
@@ -129,6 +138,10 @@ function initialize() {
   refs.filters.forEach((button) => button.addEventListener("click", handleFilterChange));
   refs.typeFilters.forEach((button) => button.addEventListener("click", handleTypeFilterChange));
   refs.genreFilters.forEach((button) => button.addEventListener("click", handleGenreFilterChange));
+  refs.genreAddBtn.addEventListener("click", handleGenreAddClick);
+  refs.genreAddConfirm.addEventListener("click", handleGenreAddConfirm);
+  refs.genreAddCancel.addEventListener("click", handleGenreAddCancel);
+  refs.genreAddInput.addEventListener("keydown", handleGenreAddKeydown);
   refs.openAdd.addEventListener("click", openAddModal);
   refs.exportNotes?.addEventListener("click", handleExportNotes);
   refs.refreshApp?.addEventListener("click", handleManualRefresh);
@@ -911,7 +924,119 @@ function setActiveGenreFilterButton() {
   });
 }
 
+let _cachedGenreKey = "";
+
+function buildGenreFilters() {
+  const dataGenres = new Set();
+  for (const item of state.items) {
+    const g = normalizeGenre(item.genre);
+    if (g) dataGenres.add(g);
+  }
+
+  const allSlugs = [...new Set([...state.userGenres, ...dataGenres])].sort();
+  const genreKey = allSlugs.join(",");
+  if (genreKey === _cachedGenreKey) return;
+  _cachedGenreKey = genreKey;
+
+  // Rebuild filter chips (keep the static "all genres" chip)
+  refs.genreFilterWrap.querySelectorAll("[data-genre-filter]:not([data-genre-filter='all'])").forEach((b) => b.remove());
+  for (const slug of allSlugs) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip";
+    btn.dataset.genreFilter = slug;
+    btn.textContent = genreDisplayLabel(slug);
+    btn.addEventListener("click", handleGenreFilterChange);
+    refs.genreFilterWrap.appendChild(btn);
+  }
+  refs.genreFilters = Array.from(refs.genreFilterWrap.querySelectorAll("[data-genre-filter]"));
+
+  // Rebuild genre select options
+  refs.genreSelect.innerHTML = '<option value="">select</option>';
+  for (const slug of allSlugs) {
+    const opt = document.createElement("option");
+    opt.value = slug;
+    opt.textContent = genreDisplayLabel(slug);
+    refs.genreSelect.appendChild(opt);
+  }
+
+  // Reset filter if the selected genre no longer exists
+  if (state.genreFilter !== "all" && !allSlugs.includes(state.genreFilter)) {
+    state.genreFilter = "all";
+  }
+
+  setActiveGenreFilterButton();
+}
+
+function genreDisplayLabel(slug) {
+  return GENRE_LABELS[slug] || slug.replace(/-/g, " ");
+}
+
+function loadUserGenres() {
+  try {
+    const raw = localStorage.getItem(GENRES_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUserGenres() {
+  localStorage.setItem(GENRES_STORAGE_KEY, JSON.stringify(state.userGenres));
+}
+
+function handleGenreAddClick() {
+  refs.genreAddRow.hidden = false;
+  refs.genreAddBtn.hidden = true;
+  refs.genreAddInput.value = "";
+  refs.genreAddInput.focus();
+}
+
+function handleGenreAddCancel() {
+  refs.genreAddRow.hidden = true;
+  refs.genreAddBtn.hidden = false;
+}
+
+function handleGenreAddKeydown(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    handleGenreAddConfirm();
+  } else if (event.key === "Escape") {
+    handleGenreAddCancel();
+  }
+}
+
+function handleGenreAddConfirm() {
+  const label = refs.genreAddInput.value.trim();
+  if (!label) {
+    refs.genreAddInput.focus();
+    return;
+  }
+  const slug = label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  if (!slug) {
+    refs.genreAddInput.focus();
+    return;
+  }
+
+  if (!state.userGenres.includes(slug)) {
+    // Store a friendly label if different from derived label
+    if (!GENRE_LABELS[slug]) {
+      GENRE_LABELS[slug] = label;
+    }
+    state.userGenres.push(slug);
+    saveUserGenres();
+    _cachedGenreKey = "";
+    buildGenreFilters();
+  }
+
+  refs.genreAddRow.hidden = true;
+  refs.genreAddBtn.hidden = false;
+}
+
 function render() {
+  buildGenreFilters();
   const visibleItems = getVisibleItems(state.items, state.filter, state.typeFilter, state.genreFilter, state.query);
   const ongoingItems = visibleItems.filter((item) => {
     const status = normalizeStatus(item.status);
@@ -1217,11 +1342,7 @@ function normalizeSeriesType(value) {
 
 function normalizeGenre(value) {
   const clean = getCleanValue(value).toLowerCase();
-  const mapped = LEGACY_GENRE_ALIASES[clean] || clean;
-  if (SERIES_GENRES.includes(mapped)) {
-    return mapped;
-  }
-  return "";
+  return LEGACY_GENRE_ALIASES[clean] || clean;
 }
 
 function normalizeDeleted(value) {

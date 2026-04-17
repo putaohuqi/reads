@@ -105,7 +105,7 @@ service cloud.firestore {
 The site includes:
 
 - [`manifest.webmanifest`](manifest.webmanifest)
-- favicon + touch icon assets
+- favicon + touch icon assets in [`assets/icons/`](assets/icons)
 - standalone install support with `start_url` set to `manhwa.html`
 
 ## Deploying To GitHub Pages
